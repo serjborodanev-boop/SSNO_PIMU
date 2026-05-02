@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Совет СНО ПИМУ</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: #f9f9f9;
+    color: #333;
+}
+
+/* HEADER */
+header {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    background: white;
+    border-bottom: 2px solid #eee;
+}
+
+.logo {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-right: 15px;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* CONTAINER */
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+
+/* SEARCH */
+.search-box {
+    margin-bottom: 15px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+/* TABLE */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background: #f0f0f0;
+    cursor: pointer;
+}
+
+tr:nth-child(even) {
+    background: #fafafa;
+}
+
+th:hover {
+    background: #e6e6e6;
+}
+
+/* CARDS */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.card img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+.role {
+    font-size: 14px;
+    color: #777;
+}
+
+.name {
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+/* ACCENT */
+.accent {
+    color: #ff7a00;
+}
+
+/* ERROR */
+.error {
+    color: red;
+    margin-top: 10px;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+    .title {
+        font-size: 18px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <!-- Логотип с fallback -->
+    <img src="images/logo.png" class="logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+    <div style="display:none;">Логотип</div>
+
+    <div class="title">Совет <span class="accent">СНО ПИМУ</span></div>
+</header>
+
+<div class="container">
+
+    <h2>Рейтинг</h2>
+
+    <div class="search-box">
+        <input type="text" id="search" placeholder="Поиск по ФИО...">
+    </div>
+
+    <table id="ratingTable">
+        <thead>
+            <tr>
+                <th data-col="name">ФИО</th>
+                <th data-col="points">Баллы</th>
+                <th data-col="projects">Проекты</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="ratingError" class="error"></div>
+
+    <h2 style="margin-top:40px;">Руководящий состав</h2>
+
+    <div class="cards" id="leadership"></div>
+    <div id="leadError" class="error"></div>
+
+</div>
+
+<script>
+// CSV ссылки
+const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
+const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
+
+// Порядок должностей
+const ROLE_ORDER = [
+"Председатель Совета СНО",
+"Заместитель председателя Совета СНО, координатор по организационной работе",
+"Заместитель председателя Совета СНО, координатор по работе с СНК",
+"Координатор по информационной работе",
+"Секретарь",
+"Советник председателя"
+];
+
+// ПРОСТОЙ CSV ПАРСЕР (поддержка кавычек)
+function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let current = '';
+    let insideQuotes = false;
+
+    for (let char of text) {
+        if (char === '"') {
+            insideQuotes = !insideQuotes;
+        } else if (char === ',' && !insideQuotes) {
+            row.push(current);
+            current = '';
+        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+            if (current || row.length) {
+                row.push(current);
+                rows.push(row);
+                row = [];
+                current = '';
+            }
+        } else {
+            current += char;
+        }
+    }
+
+    if (current) row.push(current);
+    if (row.length) rows.push(row);
+
+    return rows;
+}
+
+/* =========================
+   РЕЙТИНГ
+========================= */
+
+let ratingData = [];
+let sortDir = 1;
+
+async function loadRating() {
+    try {
+        const res = await fetch(RATING_URL);
+        if (!res.ok) throw new Error();
+
+        const text = await res.text();
+        const data = parseCSV(text).slice(1);
+
+        ratingData = data.map(r => ({
+            name: r[0],
+            points: parseInt(r[1]) || 0,
+            projects: r[2]
+        }));
+
+        renderTable(ratingData);
+
+    } catch {
+        document.getElementById('ratingError').innerText = "Ошибка загрузки рейтинга";
+    }
+}
+
+function renderTable(data) {
+    const tbody = document.querySelector("#ratingTable tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${row.name}</td>
+            <td>${row.points}</td>
+            <td>${row.projects}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Поиск
+document.getElementById("search").addEventListener("input", e => {
+    const val = e.target.value.toLowerCase();
+    const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
+    renderTable(filtered);
+});
+
+// Сортировка
+document.querySelectorAll("th").forEach(th => {
+    th.addEventListener("click", () => {
+        const col = th.dataset.col;
+
+        ratingData.sort((a, b) => {
+            return (a[col] > b[col] ? 1 : -1) * sortDir;
+        });
+
+        sortDir *= -1;
+        renderTable(ratingData);
+    });
+});
+
+/* =========================
+   РУКОВОДСТВО
+========================= */
+
+async function loadLeadership() {
+    try {
+        const res = await fetch(LEAD_URL);
+        if (!res.ok) throw new Error();
+
+        const text = await res.text();
+        const data = parseCSV(text).slice(1);
+
+        let leaders = data.map(r => ({
+            role: r[0],
+            name: r[1],
+            photo: r[2]
+        }));
+
+        // сортировка по заданному порядку
+        leaders.sort((a, b) => {
+            return ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role);
+        });
+
+        const container = document.getElementById("leadership");
+        container.innerHTML = "";
+
+        leaders.forEach(l => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+                ${l.photo ? `<img src="images/${l.photo}" onerror="this.style.display='none'">` : ""}
+                <div class="role">${l.role}</div>
+                <div class="name">${l.name}</div>
+            `;
+
+            container.appendChild(card);
+        });
+
+    } catch {
+        document.getElementById('leadError').innerText = "Ошибка загрузки состава";
+    }
+}
+
+/* =========================
+   INIT
+========================= */
+
+loadRating();
+loadLeadership();
+
+</script>
+
+</body>
+</html>
