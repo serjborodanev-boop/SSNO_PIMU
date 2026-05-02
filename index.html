@@ -148,30 +148,29 @@ th:hover {
 </header>
 
 <div class="container">
+<h2>Руководящий состав</h2>
 
-    <h2>Рейтинг</h2>
+<div class="cards" id="leadership"></div>
+<div id="leadError" class="error"></div>
 
-    <div class="search-box">
-        <input type="text" id="search" placeholder="Поиск по ФИО...">
-    </div>
+<h2 style="margin-top:40px;">Рейтинг</h2>
 
-    <table id="ratingTable">
-        <thead>
-            <tr>
-                <th data-col="name">ФИО</th>
-                <th data-col="points">Количество НОМУС-коинов</th>
-                <th data-col="projects">Продуктовые запросы и количество НОМУС-коинов за них</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+<div class="search-box">
+    <input type="text" id="search" placeholder="Поиск по ФИО...">
+</div>
 
-    <div id="ratingError" class="error"></div>
+<table id="ratingTable">
+    <thead>
+        <tr>
+            <th data-col="name">ФИО</th>
+            <th data-col="points">Баллы</th>
+            <th data-col="projects">Проекты</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
 
-    <h2 style="margin-top:40px;">Руководящий состав</h2>
-
-    <div class="cards" id="leadership"></div>
-    <div id="leadError" class="error"></div>
+<div id="ratingError" class="error"></div>
 
 </div>
 
