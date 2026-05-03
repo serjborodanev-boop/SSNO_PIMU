@@ -32,9 +32,21 @@ header {
     margin-right: 15px;
 }
 
+.header-text {
+    display: flex;
+    flex-direction: column;
+}
+
 .title {
     font-size: 22px;
     font-weight: 600;
+}
+
+.slogan {
+    font-size: 14px;
+    font-weight: 300;
+    color: #555;
+    margin-top: 5px;
 }
 
 /* CONTAINER */
@@ -54,6 +66,24 @@ header {
     padding: 10px;
     border-radius: 8px;
     border: 1px solid #ccc;
+}
+
+/* TOTAL POINTS CARD */
+.total-card {
+    background: #fff4e6;
+    border-left: 5px solid #ff7a00;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.total-card span {
+    font-weight: 700;
+    color: #ff7a00;
+    font-size: 22px;
 }
 
 /* TABLE */
@@ -133,6 +163,12 @@ th:hover {
     .title {
         font-size: 18px;
     }
+    .slogan {
+        font-size: 12px;
+    }
+    .total-card {
+        font-size: 15px;
+    }
 }
 </style>
 </head>
@@ -144,7 +180,10 @@ th:hover {
     <img src="images/logo.png" class="logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
     <div style="display:none;">Логотип</div>
 
-    <div class="title">Совет <span class="accent">СНО ПИМУ</span></div>
+    <div class="header-text">
+        <div class="title">Совет <span class="accent">СНО ПИМУ</span></div>
+        <div class="slogan">Развиваем тех, кто меняет медицину</div>
+    </div>
 </header>
 
 <div class="container">
@@ -154,6 +193,11 @@ th:hover {
 <div id="leadError" class="error"></div>
 
 <h2 style="margin-top:40px;">Рейтинг</h2>
+
+<!-- НОВОЕ ПОЛЕ: общая сумма баллов -->
+<div class="total-card" id="totalPointsBlock">
+    Общая сумма НОМУС-коинов: <span id="totalPointsValue">0</span>
+</div>
 
 <div class="search-box">
     <input type="text" id="search" placeholder="Поиск по ФИО...">
@@ -233,7 +277,7 @@ async function loadRating() {
         if (!res.ok) throw new Error();
 
         const text = await res.text();
-        const data = parseCSV(text).slice(1);
+        const data = parseCSV(text).slice(1); // убираем заголовок
 
         ratingData = data.map(r => ({
             name: r[0],
@@ -241,10 +285,15 @@ async function loadRating() {
             projects: r[2]
         }));
 
+        // Вычисляем общую сумму баллов
+        const totalPoints = ratingData.reduce((sum, person) => sum + person.points, 0);
+        document.getElementById('totalPointsValue').innerText = totalPoints;
+
         renderTable(ratingData);
 
     } catch {
         document.getElementById('ratingError').innerText = "Ошибка загрузки рейтинга";
+        document.getElementById('totalPointsValue').innerText = "0";
     }
 }
 
@@ -263,7 +312,7 @@ function renderTable(data) {
     });
 }
 
-// Поиск
+// Поиск (не влияет на общую сумму — она считается по всем людям)
 document.getElementById("search").addEventListener("input", e => {
     const val = e.target.value.toLowerCase();
     const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
@@ -336,6 +385,5 @@ loadRating();
 loadLeadership();
 
 </script>
-
 </body>
 </html>
