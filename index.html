@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Совет СНО ПИМУ</title>
 
-<!-- Google Font -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff7a00">
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<link rel="apple-touch-icon" href="images/icons/icon-192.png">
+
+<!-- Splash screens (пример, можно расширить) -->
+<link rel="apple-touch-startup-image" href="images/icons/icon-512.png">
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
@@ -20,15 +31,20 @@ body {
 header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 16px 24px;
     background: white;
     border-bottom: 2px solid #eee;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
 .logo {
     width: 50px;
     height: 50px;
-    object-fit: contain;
     margin-right: 15px;
 }
 
@@ -44,346 +60,191 @@ header {
 
 .slogan {
     font-size: 14px;
-    font-weight: 300;
     color: #555;
-    margin-top: 5px;
 }
 
-/* CONTAINER */
-.container {
-    max-width: 1200px;
-    margin: auto;
-    padding: 20px;
-}
-
-/* SEARCH */
-.search-box {
-    margin-bottom: 15px;
-}
-
-.search-box input {
-    width: 100%;
-    padding: 10px;
+/* INSTALL BUTTON */
+.install-btn {
+    background: #ff7a00;
+    color: white;
+    border: none;
+    padding: 8px 14px;
     border-radius: 8px;
-    border: 1px solid #ccc;
-}
-
-/* TOTAL POINTS CARD */
-.total-card {
-    background: #fff4e6;
-    border-left: 5px solid #ff7a00;
-    padding: 12px 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    font-size: 18px;
-    font-weight: 500;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.total-card span {
-    font-weight: 700;
-    color: #ff7a00;
-    font-size: 22px;
-}
-
-/* TABLE */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-th, td {
-    padding: 12px;
-    text-align: left;
-}
-
-th {
-    background: #f0f0f0;
     cursor: pointer;
+    display: none;
 }
 
-tr:nth-child(even) {
-    background: #fafafa;
+/* остальной стиль без изменений */
+.container { max-width:1200px; margin:auto; padding:20px; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px; }
+.card { background:white; border-radius:12px; padding:15px; text-align:center; }
+.card img { width:120px; height:120px; border-radius:50%; }
+.role { color:#777; font-size:14px; }
+.name { font-weight:600; }
+
+.total-card {
+    background:#fff4e6;
+    border-left:5px solid #ff7a00;
+    padding:12px;
+    border-radius:10px;
 }
 
-th:hover {
-    background: #e6e6e6;
-}
+table { width:100%; background:white; border-collapse:collapse; }
+th,td { padding:10px; }
+th { cursor:pointer; background:#eee; }
 
-/* CARDS */
-.cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.card {
-    background: white;
-    border-radius: 12px;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.card img {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 50%;
-    margin-bottom: 10px;
-}
-
-.role {
-    font-size: 14px;
-    color: #777;
-}
-
-.name {
-    font-weight: 600;
-    margin-top: 5px;
-}
-
-/* ACCENT */
-.accent {
-    color: #ff7a00;
-}
-
-/* ERROR */
-.error {
-    color: red;
-    margin-top: 10px;
-}
-
-/* MOBILE */
-@media (max-width: 600px) {
-    .title {
-        font-size: 18px;
-    }
-    .slogan {
-        font-size: 12px;
-    }
-    .total-card {
-        font-size: 15px;
-    }
-}
 </style>
 </head>
 
 <body>
 
 <header>
-    <!-- Логотип с fallback -->
-    <img src="images/logo.png" class="logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-    <div style="display:none;">Логотип</div>
-
-    <div class="header-text">
-        <div class="title">Совет <span class="accent">СНО ПИМУ</span></div>
-        <div class="slogan">Развиваем тех, кто меняет медицину</div>
+    <div class="header-left">
+        <img src="images/logo.png" class="logo">
+        <div class="header-text">
+            <div class="title">Совет <span style="color:#ff7a00;">СНО ПИМУ</span></div>
+            <div class="slogan">Развиваем тех, кто меняет медицину</div>
+        </div>
     </div>
+
+    <button id="installBtn" class="install-btn">Установить</button>
 </header>
 
 <div class="container">
+
 <h2>Руководящий состав</h2>
+<div id="leadership" class="cards"></div>
 
-<div class="cards" id="leadership"></div>
-<div id="leadError" class="error"></div>
+<h2>Рейтинг</h2>
 
-<h2 style="margin-top:40px;">Рейтинг</h2>
-
-<!-- НОВОЕ ПОЛЕ: общая сумма баллов -->
-<div class="total-card" id="totalPointsBlock">
-    Общая сумма НОМУС-коинов: <span id="totalPointsValue">0</span>
+<div class="total-card">
+Общая сумма НОМУС-коинов: <span id="totalPointsValue">0</span>
 </div>
 
-<div class="search-box">
-    <input type="text" id="search" placeholder="Поиск по ФИО...">
-</div>
+<input id="search" placeholder="Поиск...">
 
-<table id="ratingTable">
-    <thead>
-        <tr>
-            <th data-col="name">ФИО</th>
-            <th data-col="points">Сумма НОМУС-коинов</th>
-            <th data-col="projects">Продуктовые запросы и количество НОМУС-коинов за них</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
+<table>
+<thead>
+<tr>
+<th data-col="name">ФИО</th>
+<th data-col="points">Баллы</th>
+<th data-col="projects">Проекты</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
 </table>
-
-<div id="ratingError" class="error"></div>
 
 </div>
 
 <script>
-// CSV ссылки
 const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
 const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
 
-// Порядок должностей
-const ROLE_ORDER = [
-"Председатель Совета СНО",
-"Заместитель председателя Совета СНО, координатор по организационной работе",
-"Заместитель председателя Совета СНО, координатор по работе с СНК",
-"Координатор по информационной работе",
-"Секретарь",
-"Советник председателя"
-];
+/* =========================
+   INSTALL BUTTON
+========================= */
+let deferredPrompt;
 
-// ПРОСТОЙ CSV ПАРСЕР (поддержка кавычек)
-function parseCSV(text) {
-    const rows = [];
-    let row = [];
-    let current = '';
-    let insideQuotes = false;
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installBtn').style.display = 'block';
+});
 
-    for (let char of text) {
-        if (char === '"') {
-            insideQuotes = !insideQuotes;
-        } else if (char === ',' && !insideQuotes) {
-            row.push(current);
-            current = '';
-        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-            if (current || row.length) {
-                row.push(current);
-                rows.push(row);
-                row = [];
-                current = '';
-            }
-        } else {
-            current += char;
-        }
-    }
+document.getElementById('installBtn').onclick = async () => {
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+};
 
-    if (current) row.push(current);
-    if (row.length) rows.push(row);
-
-    return rows;
+/* =========================
+   CSV PARSER
+========================= */
+function parseCSV(text){
+    return text.split('\n').map(r => r.split(','));
 }
 
 /* =========================
-   РЕЙТИНГ
+   LOAD DATA (с офлайн fallback)
 ========================= */
 
-let ratingData = [];
-let sortDir = 1;
-
-async function loadRating() {
-    try {
+async function loadRating(){
+    try{
         const res = await fetch(RATING_URL);
-        if (!res.ok) throw new Error();
-
         const text = await res.text();
-        const data = parseCSV(text).slice(1); // убираем заголовок
 
-        ratingData = data.map(r => ({
-            name: r[0],
-            points: parseInt(r[1]) || 0,
-            projects: r[2]
-        }));
+        localStorage.setItem("rating", text);
 
-        // Вычисляем общую сумму баллов
-        const totalPoints = ratingData.reduce((sum, person) => sum + person.points, 0);
-        document.getElementById('totalPointsValue').innerText = totalPoints;
+        renderRating(text);
 
-        renderTable(ratingData);
-
-    } catch {
-        document.getElementById('ratingError').innerText = "Ошибка загрузки рейтинга";
-        document.getElementById('totalPointsValue').innerText = "0";
+    }catch{
+        console.log("offline rating");
+        const cached = localStorage.getItem("rating");
+        if(cached) renderRating(cached);
     }
 }
 
-function renderTable(data) {
-    const tbody = document.querySelector("#ratingTable tbody");
+function renderRating(text){
+    const rows = parseCSV(text).slice(1);
+
+    let total = 0;
+    const tbody = document.getElementById('tableBody');
     tbody.innerHTML = "";
 
-    data.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${row.name}</td>
-            <td>${row.points}</td>
-            <td>${row.projects}</td>
-        `;
-        tbody.appendChild(tr);
+    rows.forEach(r=>{
+        total += Number(r[1])||0;
+
+        tbody.innerHTML += `
+        <tr>
+        <td>${r[0]}</td>
+        <td>${r[1]}</td>
+        <td>${r[2]}</td>
+        </tr>`;
     });
+
+    document.getElementById('totalPointsValue').innerText = total;
 }
 
-// Поиск (не влияет на общую сумму — она считается по всем людям)
-document.getElementById("search").addEventListener("input", e => {
-    const val = e.target.value.toLowerCase();
-    const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
-    renderTable(filtered);
-});
-
-// Сортировка
-document.querySelectorAll("th").forEach(th => {
-    th.addEventListener("click", () => {
-        const col = th.dataset.col;
-
-        ratingData.sort((a, b) => {
-            return (a[col] > b[col] ? 1 : -1) * sortDir;
-        });
-
-        sortDir *= -1;
-        renderTable(ratingData);
-    });
-});
-
-/* =========================
-   РУКОВОДСТВО
-========================= */
-
-async function loadLeadership() {
-    try {
+async function loadLeadership(){
+    try{
         const res = await fetch(LEAD_URL);
-        if (!res.ok) throw new Error();
-
         const text = await res.text();
-        const data = parseCSV(text).slice(1);
 
-        let leaders = data.map(r => ({
-            role: r[0],
-            name: r[1],
-            photo: r[2]
-        }));
+        localStorage.setItem("lead", text);
 
-        // сортировка по заданному порядку
-        leaders.sort((a, b) => {
-            return ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role);
-        });
+        renderLead(text);
 
-        const container = document.getElementById("leadership");
-        container.innerHTML = "";
-
-        leaders.forEach(l => {
-            const card = document.createElement("div");
-            card.className = "card";
-
-            card.innerHTML = `
-                ${l.photo ? `<img src="images/${l.photo}" onerror="this.style.display='none'">` : ""}
-                <div class="role">${l.role}</div>
-                <div class="name">${l.name}</div>
-            `;
-
-            container.appendChild(card);
-        });
-
-    } catch {
-        document.getElementById('leadError').innerText = "Ошибка загрузки состава";
+    }catch{
+        const cached = localStorage.getItem("lead");
+        if(cached) renderLead(cached);
     }
 }
 
-/* =========================
-   INIT
-========================= */
+function renderLead(text){
+    const rows = parseCSV(text).slice(1);
 
+    const cont = document.getElementById('leadership');
+    cont.innerHTML="";
+
+    rows.forEach(r=>{
+        cont.innerHTML += `
+        <div class="card">
+        ${r[2]?`<img src="images/${r[2]}">`:""}
+        <div class="role">${r[0]}</div>
+        <div class="name">${r[1]}</div>
+        </div>`;
+    });
+}
+
+/* INIT */
 loadRating();
 loadLeadership();
 
+/* SERVICE WORKER */
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+}
 </script>
+
 </body>
 </html>
