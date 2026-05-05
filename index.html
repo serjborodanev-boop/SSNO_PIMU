@@ -67,7 +67,7 @@ header {
 }
 .card img {
     width: 120px;
-    height: 120px;
+    height: 80px;
     object-fit: cover;
     border-radius: 50%;
     margin-bottom: 10px;
@@ -131,8 +131,7 @@ th:hover {
     color: red;
     margin-top: 10px;
 }
-
-/* ---------- КАЛЕНДАРЬ НА GRID С ОБЪЕДИНЕНИЕМ СОБЫТИЙ ---------- */
+/* КАЛЕНДАРЬ: ФИКСИРОВАННАЯ ВЫСОТА ЯЧЕЕК */
 .calendar-grid {
     background: white;
     border-radius: 12px;
@@ -184,11 +183,10 @@ th:hover {
     border: 1px solid #ddd;
 }
 .day-cell {
-    min-height: 100px;
+    height: 120px;               /* фиксированная высота */
+    overflow-y: auto;            /* прокрутка при переполнении */
     border: 1px solid #eee;
     padding: 6px;
-    vertical-align: top;
-    position: relative;
     background-color: white;
 }
 .day-number {
@@ -215,7 +213,7 @@ th:hover {
 }
 @media (max-width: 768px) {
     .day-cell {
-        min-height: 70px;
+        height: 90px;
     }
     .event-bar {
         font-size: 10px;
@@ -296,7 +294,7 @@ function parseCSV(text) {
     return rows;
 }
 
-// Нормализация даты из CSV в объект Date (берем только дату без времени)
+// Нормализация даты из CSV в объект Date (UTC)
 function parseDateFromString(raw) {
     if (!raw) return null;
     let str = raw.trim();
@@ -310,9 +308,8 @@ function parseDateFromString(raw) {
     }
     return null;
 }
-
 function formatDateKey(date) {
-    if (!date) return null;
+    if (!date) return '';
     let y = date.getUTCFullYear();
     let m = String(date.getUTCMonth() + 1).padStart(2,'0');
     let d = String(date.getUTCDate()).padStart(2,'0');
@@ -412,9 +409,9 @@ async function loadLeadership() {
     }
 }
 
-// ---------- КАЛЕНДАРЬ С ОБЪЕДИНЕНИЕМ (GRID) ----------
+// ---------- КАЛЕНДАРЬ (фиксированная высота, цветные полоски) ----------
 let currentYear, currentMonth;
-let rawEvents = []; // массив событий с startDate, endDate, title, description
+let rawEvents = [];
 
 async function loadEvents() {
     try {
@@ -452,13 +449,11 @@ async function loadEvents() {
 
 function renderCalendar(year, month) {
     const firstDayOfMonth = new Date(Date.UTC(year, month, 1));
-    const startWeekday = firstDayOfMonth.getUTCDay(); // 0 воскресенье
-    // Нам нужно начать с понедельника (1). Сдвиг: если воскресенье (0), то двигаемся на 6 дней назад
+    const startWeekday = firstDayOfMonth.getUTCDay(); // 0 вс
     let startDate = new Date(firstDayOfMonth);
     let offset = (startWeekday === 0 ? 6 : startWeekday - 1);
     startDate.setUTCDate(startDate.getUTCDate() - offset);
     
-    // Строим сетку 42 дня (6 недель)
     const days = [];
     for (let i = 0; i < 42; i++) {
         let date = new Date(startDate);
@@ -466,37 +461,28 @@ function renderCalendar(year, month) {
         days.push(date);
     }
     
-    // Группируем события по дням (для ячеек)
+    // Подготовим события для каждого дня
     const eventsByDay = {};
     days.forEach(date => {
         const key = formatDateKey(date);
         eventsByDay[key] = [];
     });
     
-    // Для каждого события определим, на какие дни оно попадает в этом месяце
-    const eventRanges = []; // { startIndex, endIndex, title, description, eventId }
-    days.forEach((date, idx) => {
-        const dateKey = formatDateKey(date);
-        rawEvents.forEach((ev, evIdx) => {
-            if (date >= ev.start && date <= ev.end) {
-                // Проверяем, есть ли уже такое событие в списке для этого дня
-                if (!eventsByDay[dateKey].some(e => e.title === ev.title && e.description === ev.description && e.start === ev.start)) {
-                    eventsByDay[dateKey].push({
-                        title: ev.title,
-                        description: ev.description,
-                        start: ev.start,
-                        end: ev.end,
-                        eventId: evIdx
-                    });
-                }
+    rawEvents.forEach(ev => {
+        const start = ev.start;
+        const end = ev.end;
+        days.forEach(date => {
+            if (date >= start && date <= end) {
+                const key = formatDateKey(date);
+                eventsByDay[key].push(ev);
             }
         });
     });
     
+    // Отрисовка
     const container = document.getElementById('calendar-container');
     container.innerHTML = '';
     
-    // Заголовок и навигация
     const headerDiv = document.createElement('div');
     headerDiv.className = 'calendar-header';
     headerDiv.innerHTML = `
@@ -510,7 +496,7 @@ function renderCalendar(year, month) {
     
     const weekdaysDiv = document.createElement('div');
     weekdaysDiv.className = 'weekdays';
-    const weekdays = ['Пн', 'Вт', ' Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
     weekdays.forEach(day => {
         const d = document.createElement('div');
         d.className = 'weekday';
@@ -522,47 +508,43 @@ function renderCalendar(year, month) {
     const daysGrid = document.createElement('div');
     daysGrid.className = 'calendar-days';
     
-    // Отображаем дни
-    days.forEach((date, idx) => {
-        const dateKey = formatDateKey(date);
+    days.forEach(date => {
+        const key = formatDateKey(date);
         const dayNumber = date.getUTCDate();
         const isCurrentMonth = date.getUTCMonth() === month;
         const cell = document.createElement('div');
         cell.className = 'day-cell';
         cell.style.backgroundColor = isCurrentMonth ? 'white' : '#f9f9f9';
+        
         const numDiv = document.createElement('div');
         numDiv.className = 'day-number';
         numDiv.textContent = dayNumber;
         cell.appendChild(numDiv);
         
-        // События этого дня
-        const dayEvents = eventsByDay[dateKey] || [];
-        // Чтобы не дублировать многодневные события в каждой ячейке, сгруппируем по уникальному id события
+        const dayEvents = eventsByDay[key] || [];
+        // Убираем дублирование
         const uniqueEvents = [];
-        const seen = new Set();
+        const ids = new Set();
         dayEvents.forEach(ev => {
-            const id = ev.title + ev.start.toString();
-            if (!seen.has(id)) {
-                seen.add(id);
+            const id = ev.title + ev.start.toISOString();
+            if (!ids.has(id)) {
+                ids.add(id);
                 uniqueEvents.push(ev);
             }
         });
-        // Сортируем?
         uniqueEvents.sort((a,b) => a.title.localeCompare(b.title));
         
         uniqueEvents.forEach(ev => {
             const eventDiv = document.createElement('div');
             eventDiv.className = 'event-bar';
-            // Проверяем, первый ли это день события?
-            const startKey = formatDateKey(ev.start);
-            const isFirstDay = (startKey === dateKey);
-            let displayText = isFirstDay ? ev.title : '↳ ' + ev.title;
-            if (displayText.length > 25) displayText = displayText.slice(0,22)+'…';
+            let displayText = ev.title.length > 25 ? ev.title.slice(0,22)+'…' : ev.title;
             eventDiv.textContent = displayText;
-            eventDiv.title = ev.title + (ev.description ? ': ' + ev.description : '') + (ev.end > ev.start ? ` (до ${formatDateKey(ev.end)})` : '');
+            const startStr = formatDateKey(ev.start);
+            const endStr = formatDateKey(ev.end);
+            eventDiv.title = `${ev.title}${ev.description ? ': '+ev.description : ''} (${startStr} – ${endStr})`;
             eventDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
-                alert(`${ev.title}\n${ev.description ? ev.description : ''}\nДаты: ${startKey} – ${formatDateKey(ev.end)}`);
+                alert(`${ev.title}\n${ev.description ? ev.description : ''}\nДаты: ${startStr} – ${endStr}`);
             });
             cell.appendChild(eventDiv);
         });
@@ -571,7 +553,7 @@ function renderCalendar(year, month) {
     });
     container.appendChild(daysGrid);
     
-    // Навигация
+    // обработчики стрелок
     document.getElementById('prevMonthBtn').addEventListener('click', () => {
         if (currentMonth === 0) {
             currentMonth = 11;
@@ -609,7 +591,6 @@ function escapeHtml(str) {
     });
 }
 
-// Запуск
 loadRating();
 loadLeadership();
 loadEvents().then(() => initCalendar());
