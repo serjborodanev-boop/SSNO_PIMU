@@ -117,6 +117,7 @@ table {
 th, td {
     padding: 12px;
     text-align: left;
+    border-bottom: 1px solid #eee;
 }
 th {
     background: #f0f0f0;
@@ -138,9 +139,11 @@ th:hover {
     padding: 15px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     margin-bottom: 30px;
+    overflow-x: auto;
 }
 .fc {
     font-family: 'Inter', sans-serif;
+    max-width: 100%;
 }
 .fc .fc-button-primary {
     background-color: #ff7a00;
@@ -149,6 +152,7 @@ th:hover {
 .fc .fc-button-primary:hover {
     background-color: #e06a00;
 }
+/* Минимальная адаптация — только чтобы не ломать сетку */
 @media (max-width: 768px) {
     .container {
         padding: 12px;
@@ -158,9 +162,6 @@ th:hover {
     }
     .slogan {
         font-size: 12px;
-    }
-    .total-card {
-        font-size: 15px;
     }
     .cards {
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -183,19 +184,6 @@ th:hover {
     .fc .fc-button {
         padding: 6px 10px;
         font-size: 0.85rem;
-    }
-    .fc .fc-daygrid-day-frame {
-        min-height: 80px;
-    }
-    .fc .fc-daygrid-day-number {
-        font-size: 12px;
-    }
-}
-@media (max-width: 600px) {
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
     }
 }
 </style>
@@ -242,11 +230,11 @@ th:hover {
 // ======================== GOOGLE SHEETS ССЫЛКИ ========================
 const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
 const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
-// ВАЖНО: Замените ссылку ниже на вашу реальную CSV-ссылку листа events
+// Замените ссылку ниже на вашу реальную CSV-ссылку листа events (столбцы: title, start, end, description)
 const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv";
 // ======================================================================
 
-// Парсер CSV
+// Парсер CSV (с поддержкой кавычек)
 function parseCSV(text) {
     const rows = [];
     let row = [];
@@ -302,7 +290,11 @@ function renderTable(data) {
     tbody.innerHTML = "";
     data.forEach(row => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<tr>${escapeHtml(row.name)}${row.points}${escapeHtml(row.projects)} `;
+        tr.innerHTML = `
+            <td>${escapeHtml(row.name)}<\/td>
+            <td>${row.points}<\/td>
+            <td>${escapeHtml(row.projects)}<\/td>
+        `;
         tbody.appendChild(tr);
     });
 }
@@ -366,9 +358,8 @@ async function loadLeadership() {
     }
 }
 
-// ======================== КАЛЕНДАРЬ (только месяц и неделя, адаптивный) ========================
+// ======================== КАЛЕНДАРЬ (упрощённый, без сжатия) ========================
 let calendar;
-let userHasChangedView = false; // чтобы не сбрасывать выбор пользователя
 
 async function loadEvents() {
     if (!EVENTS_URL || EVENTS_URL.includes("gid=123456789")) {
@@ -389,12 +380,9 @@ async function loadEvents() {
 
         if (calendar) calendar.destroy();
 
-        const isMobile = window.innerWidth <= 768;
-        const initialView = isMobile ? 'timeGridWeek' : 'dayGridMonth';
-
         const calendarEl = document.getElementById('calendar-container');
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: initialView,
+            initialView: 'dayGridMonth',
             locale: 'ru',
             firstDay: 1,
             events: events,
@@ -414,26 +402,12 @@ async function loadEvents() {
                 else alert(info.event.title);
             },
             contentHeight: 'auto',
+            // Важно: не ограничиваем количество событий в ячейке
             dayMaxEvents: false,
+            // Убираем возможные конфликты с CSS
             eventDisplay: 'block'
         });
         calendar.render();
-
-        // Отслеживаем ручное переключение пользователя
-        calendarEl.addEventListener('viewDidMount', () => {
-            userHasChangedView = true;
-        });
-
-        // Адаптивное переключение только если пользователь не трогал вид
-        window.addEventListener('resize', () => {
-            if (userHasChangedView) return;
-            const nowMobile = window.innerWidth <= 768;
-            if (nowMobile && calendar.view.type !== 'timeGridWeek') {
-                calendar.changeView('timeGridWeek');
-            } else if (!nowMobile && calendar.view.type !== 'dayGridMonth') {
-                calendar.changeView('dayGridMonth');
-            }
-        });
     } catch(e) {
         console.error('Ошибка загрузки событий:', e);
         document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь. Проверьте ссылку на CSV и формат дат (YYYY-MM-DD).</p>';
