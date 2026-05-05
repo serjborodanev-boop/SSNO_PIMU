@@ -8,7 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-
 <style>
 * {
     box-sizing: border-box;
@@ -150,7 +149,6 @@ th:hover {
 .fc .fc-button-primary:hover {
     background-color: #e06a00;
 }
-/* Только мягкая адаптация для мобильных — без скрытия событий */
 @media (max-width: 768px) {
     .container {
         padding: 12px;
@@ -187,23 +185,10 @@ th:hover {
         font-size: 0.85rem;
     }
     .fc .fc-daygrid-day-frame {
-        min-height: 80px; /* достаточно для 2-3 событий */
+        min-height: 80px;
     }
     .fc .fc-daygrid-day-number {
         font-size: 12px;
-    }
-    /* Для годового вида — ячейки чуть выше */
-    .fc .fc-multimonth-daygrid .fc-daygrid-day-frame {
-        min-height: 60px;
-    }
-}
-@media (max-width: 480px) {
-    .fc .fc-daygrid-day-frame {
-        min-height: 65px;
-    }
-    .fc .fc-button {
-        padding: 4px 8px;
-        font-size: 0.75rem;
     }
 }
 @media (max-width: 600px) {
@@ -254,12 +239,14 @@ th:hover {
 </div>
 
 <script>
-// ---------------------- ССЫЛКИ (замените при необходимости) ----------------------
+// ======================== GOOGLE SHEETS ССЫЛКИ ========================
 const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
 const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
-const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv"; // ЗАМЕНИТЕ НА РЕАЛЬНУЮ ССЫЛКУ
+// ВАЖНО: Замените ссылку ниже на вашу реальную CSV-ссылку листа events
+const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv";
+// ======================================================================
 
-// ---------------------- Парсер CSV ----------------------
+// Парсер CSV
 function parseCSV(text) {
     const rows = [];
     let row = [];
@@ -286,7 +273,7 @@ function parseCSV(text) {
     return rows;
 }
 
-// ---------------------- РЕЙТИНГ ----------------------
+// ======================== РЕЙТИНГ ========================
 let ratingData = [];
 let sortDir = 1;
 
@@ -315,7 +302,7 @@ function renderTable(data) {
     tbody.innerHTML = "";
     data.forEach(row => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${escapeHtml(row.name)}</td><td>${row.points}</td><td>${escapeHtml(row.projects)}</td>`;
+        tr.innerHTML = `<tr>${escapeHtml(row.name)}${row.points}${escapeHtml(row.projects)} `;
         tbody.appendChild(tr);
     });
 }
@@ -339,7 +326,7 @@ document.querySelectorAll("th").forEach(th => {
     });
 });
 
-// ---------------------- РУКОВОДСТВО ----------------------
+// ======================== РУКОВОДСТВО ========================
 const ROLE_ORDER = [
     "Председатель Совета СНО",
     "Заместитель председателя Совета СНО, координатор по организационной работе",
@@ -379,8 +366,10 @@ async function loadLeadership() {
     }
 }
 
-// ---------------------- КАЛЕНДАРЬ (исправленный) ----------------------
+// ======================== КАЛЕНДАРЬ (только месяц и неделя, адаптивный) ========================
 let calendar;
+let userHasChangedView = false; // чтобы не сбрасывать выбор пользователя
+
 async function loadEvents() {
     if (!EVENTS_URL || EVENTS_URL.includes("gid=123456789")) {
         document.getElementById('calendar-container').innerHTML = '<p style="color:gray;">Укажите ссылку на Google Sheets с событиями (лист events: title, start, end, description) в переменной EVENTS_URL</p>';
@@ -400,22 +389,24 @@ async function loadEvents() {
 
         if (calendar) calendar.destroy();
 
+        const isMobile = window.innerWidth <= 768;
+        const initialView = isMobile ? 'timeGridWeek' : 'dayGridMonth';
+
         const calendarEl = document.getElementById('calendar-container');
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: window.innerWidth <= 768 ? 'timeGridWeek' : 'multiMonthYear',
+            initialView: initialView,
             locale: 'ru',
             firstDay: 1,
             events: events,
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,multiMonthYear'
+                right: 'dayGridMonth,timeGridWeek'
             },
             buttonText: {
                 today: 'Сегодня',
                 dayGridMonth: 'Месяц',
-                timeGridWeek: 'Неделя',
-                multiMonthYear: 'Год'
+                timeGridWeek: 'Неделя'
             },
             eventClick: function(info) {
                 const desc = info.event.extendedProps.description;
@@ -423,22 +414,24 @@ async function loadEvents() {
                 else alert(info.event.title);
             },
             contentHeight: 'auto',
-            // Важно: отключаем dayMaxEvents, чтобы события всегда были видны
             dayMaxEvents: false,
-            // Для multiMonthYear тоже работают события
-            multiMonthMinWidth: 250,
-            multiMonthMaxColumns: 3
+            eventDisplay: 'block'
         });
         calendar.render();
 
-        // Адаптация при изменении ширины окна — меняем вид только если пользователь не переключил вручную
-        let userSelectedView = false;
-        calendarEl.addEventListener('viewDidMount', () => { userSelectedView = true; });
+        // Отслеживаем ручное переключение пользователя
+        calendarEl.addEventListener('viewDidMount', () => {
+            userHasChangedView = true;
+        });
+
+        // Адаптивное переключение только если пользователь не трогал вид
         window.addEventListener('resize', () => {
-            if (!userSelectedView && window.innerWidth <= 768 && calendar.view.type !== 'timeGridWeek') {
+            if (userHasChangedView) return;
+            const nowMobile = window.innerWidth <= 768;
+            if (nowMobile && calendar.view.type !== 'timeGridWeek') {
                 calendar.changeView('timeGridWeek');
-            } else if (!userSelectedView && window.innerWidth > 768 && calendar.view.type === 'timeGridWeek') {
-                calendar.changeView('multiMonthYear');
+            } else if (!nowMobile && calendar.view.type !== 'dayGridMonth') {
+                calendar.changeView('dayGridMonth');
             }
         });
     } catch(e) {
