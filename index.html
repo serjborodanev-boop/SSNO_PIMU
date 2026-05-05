@@ -6,9 +6,6 @@
 <title>Совет СНО ПИМУ</title>
 <link rel="icon" href="images/logo.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<!-- CSS и JS Vanilla Calendar Pro -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanilla-calendar-pro@2.9.0/build/vanilla-calendar.min.css">
-<script src="https://cdn.jsdelivr.net/npm/vanilla-calendar-pro@2.9.0/build/vanilla-calendar.min.js"></script>
 <style>
 * {
     box-sizing: border-box;
@@ -134,17 +131,85 @@ th:hover {
     color: red;
     margin-top: 10px;
 }
-#calendar-container {
+/* Календарь */
+.calendar-wrapper {
     background: white;
     border-radius: 12px;
     padding: 15px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     margin-bottom: 30px;
-}
-/* Дополнительная адаптация для календаря */
-.vanilla-calendar {
-    max-width: 100%;
     overflow-x: auto;
+}
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.calendar-nav button {
+    background: #ff7a00;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0 4px;
+}
+.calendar-nav button:hover {
+    background: #e06a00;
+}
+.month-year {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+.calendar-table th, .calendar-table td {
+    border: 1px solid #ddd;
+    text-align: left;
+    vertical-align: top;
+    padding: 6px;
+    width: 14%;
+    background-color: white;
+}
+.calendar-table td {
+    height: auto;
+    min-height: 90px;
+    cursor: pointer;
+}
+.calendar-table td:hover {
+    background-color: #fff4e6;
+}
+.day-number {
+    font-weight: bold;
+    text-align: right;
+    margin-bottom: 4px;
+}
+.event-item {
+    background-color: #ffefdb;
+    border-left: 3px solid #ff7a00;
+    margin-top: 2px;
+    padding: 2px 4px;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
+.event-item strong {
+    font-weight: 600;
+    color: #e06a00;
+}
+.more-events {
+    font-size: 11px;
+    color: #777;
+    text-align: center;
+    margin-top: 2px;
 }
 @media (max-width: 768px) {
     .container {
@@ -164,8 +229,12 @@ th:hover {
         padding: 8px;
         font-size: 14px;
     }
-    .vanilla-calendar-day__popup {
-        max-width: 90vw;
+    .calendar-table td {
+        min-height: 65px;
+    }
+    .event-item {
+        font-size: 10px;
+        padding: 1px 2px;
     }
 }
 </style>
@@ -186,7 +255,7 @@ th:hover {
     <div id="leadError" class="error"></div>
 
     <h2>Календарь событий</h2>
-    <div id="calendar-container"></div>
+    <div class="calendar-wrapper" id="calendar-wrapper"></div>
 
     <h2>Рейтинг</h2>
     <div class="total-card">
@@ -215,7 +284,7 @@ const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_P
 const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv";
 // ======================================================================
 
-// Парсер CSV (универсальный)
+// Парсер CSV
 function parseCSV(text) {
     const rows = [];
     let row = [];
@@ -339,84 +408,145 @@ async function loadLeadership() {
     }
 }
 
-// ---------- КАЛЕНДАРЬ Vanilla Calendar Pro ----------
-let calendarInstance = null;
+// ---------- КАЛЕНДАРЬ с текстовым отображением событий ----------
+let currentYear, currentMonth;
+let eventsByDate = {}; // { "YYYY-MM-DD": [ {title, description} ] }
 
-async function loadEventsForCalendar() {
+async function loadEvents() {
     try {
         const res = await fetch(EVENTS_URL);
         if (!res.ok) throw new Error();
         const text = await res.text();
         const rows = parseCSV(text).slice(1);
-        // формируем объект: ключ - дата YYYY-MM-DD, значение - массив событий
-        const eventsMap = {};
+        eventsByDate = {};
         rows.forEach(row => {
-            const title = row[0] || "Событие";
-            const startDate = row[1] ? row[1].split(' ')[0] : null; // берём только дату
-            const description = row[3] || "";
-            if (startDate) {
-                if (!eventsMap[startDate]) eventsMap[startDate] = [];
-                eventsMap[startDate].push({
-                    title: title,
-                    description: description
-                });
-            }
-        });
-        
-        // преобразуем в формат, ожидаемый Vanilla Calendar Pro (массив объектов с date и title)
-        const markedDates = Object.keys(eventsMap).map(date => {
-            const events = eventsMap[date];
-            // объединяем названия в одну строку для всплывающей подсказки
-            const popoverText = events.map(e => e.title + (e.description ? `: ${e.description}` : '')).join('\n');
-            return {
-                date: date,
-                title: events.map(e => e.title).join(', '),
-                popover: { title: 'События', content: popoverText }
-            };
-        });
-        
-        if (calendarInstance) {
-            calendarInstance.destroy();
-            calendarInstance = null;
-        }
-        
-        const calendarContainer = document.getElementById('calendar-container');
-        calendarContainer.innerHTML = ''; // очищаем
-        calendarInstance = new VanillaCalendar(calendarContainer, {
-            settings: {
-                lang: 'ru',
-                firstWeekDay: 1,
-                visibility: {
-                    theme: 'light',
-                    weekend: true,
-                    today: true
-                },
-                selection: {
-                    day: false,
-                    month: false,
-                    year: false
+            let title = row[0]?.trim() || "Событие";
+            let startRaw = row[1]?.trim();
+            let description = row[3]?.trim() || "";
+            if (!startRaw) return;
+            let dateStr = null;
+            // Поддержка YYYY-MM-DD и DD.MM.YYYY
+            let match = startRaw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                dateStr = `${match[1]}-${match[2]}-${match[3]}`;
+            } else {
+                match = startRaw.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+                if (match) {
+                    dateStr = `${match[3]}-${match[2]}-${match[1]}`;
                 }
-            },
-            popups: {
-                priority: 'shown',
-                modifiers: { title: 'tooltip-center' }
+            }
+            if (!dateStr) return;
+            if (!eventsByDate[dateStr]) eventsByDate[dateStr] = [];
+            eventsByDate[dateStr].push({ title, description });
+        });
+        if (currentYear !== undefined) {
+            renderCalendar(currentYear, currentMonth);
+        }
+    } catch(e) {
+        console.error('Ошибка загрузки событий:', e);
+        document.getElementById('calendar-wrapper').innerHTML = '<p style="color:red;">Не удалось загрузить календарь</p>';
+    }
+}
+
+function renderCalendar(year, month) {
+    const firstDayOfMonth = new Date(year, month, 1);
+    const startWeekday = firstDayOfMonth.getDay(); // 0 воскресенье
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    let startOffset = startWeekday === 0 ? 6 : startWeekday - 1;
+    
+    let calendarHtml = `<div class="calendar-header">
+        <div class="month-year">${month+1}.${year}</div>
+        <div class="calendar-nav">
+            <button id="prevMonthBtn">◀ Пред.</button>
+            <button id="nextMonthBtn">След. ▶</button>
+        </div>
+    </div>
+    <table class="calendar-table">
+        <thead><tr>${weekdays.map(day => `<th>${day}</th>`).join('')}</tr></thead>
+        <tbody><tr>`;
+    
+    let dayCount = 1;
+    for (let i = 0; i < 42; i++) {
+        if (i >= startOffset && dayCount <= daysInMonth) {
+            const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(dayCount).padStart(2,'0')}`;
+            const events = eventsByDate[dateKey] || [];
+            // Строим HTML событий
+            let eventsHtml = '';
+            const maxDisplay = 3; // показываем максимум 3 события в ячейке
+            for (let idx = 0; idx < Math.min(events.length, maxDisplay); idx++) {
+                const ev = events[idx];
+                let shortTitle = ev.title.length > 20 ? ev.title.slice(0,18)+'…' : ev.title;
+                eventsHtml += `<div class="event-item" title="${escapeHtml(ev.title)}${ev.description ? ': ' + escapeHtml(ev.description) : ''}">
+                    <strong>•</strong> ${escapeHtml(shortTitle)}
+                </div>`;
+            }
+            if (events.length > maxDisplay) {
+                eventsHtml += `<div class="more-events">+ ещё ${events.length - maxDisplay}</div>`;
+            }
+            calendarHtml += `<td data-date="${dateKey}">
+                <div class="day-number">${dayCount}</div>
+                ${eventsHtml}
+            </td>`;
+            dayCount++;
+        } else {
+            calendarHtml += `<td style="background:#f9f9f9;"></td>`;
+        }
+        if ((i+1) % 7 === 0 && i !== 41) {
+            calendarHtml += `</tr><tr>`;
+        }
+    }
+    calendarHtml += `</tr></tbody></table>`;
+    
+    document.getElementById('calendar-wrapper').innerHTML = calendarHtml;
+    
+    // Обработчики кликов на ячейках (для детального просмотра)
+    document.querySelectorAll('.calendar-table td[data-date]').forEach(cell => {
+        cell.addEventListener('click', () => {
+            const date = cell.getAttribute('data-date');
+            const events = eventsByDate[date] || [];
+            if (events.length === 0) {
+                alert('Нет событий на эту дату');
+            } else {
+                let msg = events.map(e => `${e.title}${e.description ? ': ' + e.description : ''}`).join('\n');
+                alert(`События на ${date}:\n${msg}`);
             }
         });
-        
-        // Добавляем отмеченные даты
-        if (markedDates.length) {
-            calendarInstance.settings.markedDates = markedDates;
-        }
-        
-        calendarInstance.init();
-        
-        // После инициализации добавляем кастомные данные для popup, если нужно
-        calendarInstance.update();
-        
-    } catch(e) {
-        console.error('Ошибка загрузки событий для календаря:', e);
-        document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь. Проверьте ссылку на CSV и формат дат (YYYY-MM-DD).</p>';
+    });
+    
+    // Обработчики кнопок навигации
+    const prevBtn = document.getElementById('prevMonthBtn');
+    const nextBtn = document.getElementById('nextMonthBtn');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentMonth === 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else {
+                currentMonth--;
+            }
+            renderCalendar(currentYear, currentMonth);
+        });
     }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (currentMonth === 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else {
+                currentMonth++;
+            }
+            renderCalendar(currentYear, currentMonth);
+        });
+    }
+}
+
+function initCalendar() {
+    const now = new Date();
+    currentYear = now.getFullYear();
+    currentMonth = now.getMonth();
+    renderCalendar(currentYear, currentMonth);
 }
 
 function escapeHtml(str) {
@@ -432,7 +562,7 @@ function escapeHtml(str) {
 // Запуск
 loadRating();
 loadLeadership();
-loadEventsForCalendar();
+loadEvents().then(() => initCalendar());
 </script>
 </body>
 </html>
