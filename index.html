@@ -8,7 +8,7 @@
 <!-- Шрифт Inter -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
-<!-- FullCalendar CSS + JS (с поддержкой multiMonthYear) -->
+<!-- FullCalendar CSS + JS (глобальная сборка со всеми плагинами) -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
@@ -176,16 +176,13 @@ th:hover {
 </header>
 
 <div class="container">
-    <!-- Руководящий состав -->
     <h2>Руководящий состав</h2>
     <div class="cards" id="leadership"></div>
     <div id="leadError" class="error"></div>
 
-    <!-- Календарь -->
-    <h2 style="margin-top: 40px;">Календарь событий (весь год)</h2>
+    <h2 style="margin-top: 40px;">Календарь событий (неделя / месяц / год)</h2>
     <div id="calendar-container"></div>
 
-    <!-- Рейтинг -->
     <h2>Рейтинг</h2>
     <div class="total-card">
         Общая сумма НОМУС-коинов: <span id="totalPointsValue">0</span>
@@ -341,11 +338,10 @@ async function loadLeadership() {
     }
 }
 
-// ======================== КАЛЕНДАРЬ (FullCalendar, multiMonthYear) ========================
+// ======================== КАЛЕНДАРЬ (FullCalendar с переключением видов) ========================
 let calendar;
 
 async function loadEvents() {
-    // Проверяем, что ссылка не дефолтная
     if (!EVENTS_URL || EVENTS_URL.includes("gid=123456789")) {
         document.getElementById('calendar-container').innerHTML = '<p style="color:gray;">Укажите ссылку на Google Sheets с событиями (лист events: title, start, end, description) в переменной EVENTS_URL</p>';
         return;
@@ -354,8 +350,7 @@ async function loadEvents() {
         const res = await fetch(EVENTS_URL);
         if (!res.ok) throw new Error();
         const text = await res.text();
-        const rows = parseCSV(text).slice(1); // первая строка — заголовки
-        
+        const rows = parseCSV(text).slice(1);
         const events = rows.map(row => ({
             title: row[0] || "Без названия",
             start: row[1] || "",
@@ -363,40 +358,37 @@ async function loadEvents() {
             description: row[3] || ""
         })).filter(ev => ev.start);
 
-        // Если календарь уже создан — уничтожаем и создаём заново
         if (calendar) {
             calendar.destroy();
         }
 
         const calendarEl = document.getElementById('calendar-container');
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'multiMonthYear',   // показываем сразу много месяцев (весь год)
+            initialView: 'multiMonthYear',   // можно также 'dayGridMonth' или 'timeGridWeek'
             locale: 'ru',
-            firstDay: 1,                     // неделя начинается с понедельника
+            firstDay: 1,
             events: events,
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'multiMonthYear'      // кнопка переключения в год (но можно и dayGridMonth добавить)
+                right: 'dayGridMonth,timeGridWeek,multiMonthYear'
             },
             buttonText: {
                 today: 'Сегодня',
-                month: 'Месяц',
+                dayGridMonth: 'Месяц',
+                timeGridWeek: 'Неделя',
                 multiMonthYear: 'Год'
             },
             // При клике на событие показываем описание
             eventClick: function(info) {
-                let desc = info.event.extendedProps.description;
+                const desc = info.event.extendedProps.description;
                 if (desc) {
                     alert(info.event.title + "\n\n" + desc);
                 } else {
                     alert(info.event.title);
                 }
             },
-            // Чтобы много месяцев не растягивало слишком широко, задаём желаемую высоту
-            contentHeight: 'auto',
-            aspectRatio: 2.5,
-            // Количество отображаемых месяцев можно настроить, но multiMonthYear по умолчанию показывает 3x4 (12 месяцев)
+            contentHeight: 'auto'
         });
         calendar.render();
 
@@ -416,7 +408,7 @@ function escapeHtml(str) {
     });
 }
 
-// Старт загрузок
+// Загрузка всех данных
 loadRating();
 loadLeadership();
 loadEvents();
