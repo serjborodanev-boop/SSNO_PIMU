@@ -6,8 +6,20 @@
 <title>Совет СНО ПИМУ</title>
 <link rel="icon" href="images/logo.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+<!-- Schedule-X CSS (адаптивный календарь) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@schedule-x/theme-default@2.0.0/dist/index.css" />
+<!-- Импорт календаря и плагинов как модуль (используем type="module") -->
+<script type="importmap">
+  {
+    "imports": {
+      "@schedule-x/calendar": "https://cdn.jsdelivr.net/npm/@schedule-x/calendar@2.0.0/dist/index.js",
+      "@schedule-x/theme-default": "https://cdn.jsdelivr.net/npm/@schedule-x/theme-default@2.0.0/dist/index.js",
+      "@schedule-x/events-service": "https://cdn.jsdelivr.net/npm/@schedule-x/events-service@2.0.0/dist/index.js"
+    }
+  }
+</script>
+
 <style>
 * {
     box-sizing: border-box;
@@ -133,6 +145,7 @@ th:hover {
     color: red;
     margin-top: 10px;
 }
+/* календарь */
 #calendar-container {
     background: white;
     border-radius: 12px;
@@ -141,27 +154,12 @@ th:hover {
     margin-bottom: 30px;
     overflow-x: auto;
 }
-.fc {
-    font-family: 'Inter', sans-serif;
-    max-width: 100%;
-}
-.fc .fc-button-primary {
-    background-color: #ff7a00;
-    border-color: #e06a00;
-}
-.fc .fc-button-primary:hover {
-    background-color: #e06a00;
-}
-/* Минимальная адаптация — только чтобы не ломать сетку */
 @media (max-width: 768px) {
     .container {
         padding: 12px;
     }
     .title {
         font-size: 18px;
-    }
-    .slogan {
-        font-size: 12px;
     }
     .cards {
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -173,17 +171,6 @@ th:hover {
     th, td {
         padding: 8px;
         font-size: 14px;
-    }
-    .fc .fc-toolbar {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .fc .fc-toolbar-title {
-        font-size: 1.2rem;
-    }
-    .fc .fc-button {
-        padding: 6px 10px;
-        font-size: 0.85rem;
     }
 }
 </style>
@@ -203,7 +190,7 @@ th:hover {
     <div class="cards" id="leadership"></div>
     <div id="leadError" class="error"></div>
 
-    <h2 style="margin-top: 40px;">Календарь событий</h2>
+    <h2>Календарь событий</h2>
     <div id="calendar-container"></div>
 
     <h2>Рейтинг</h2>
@@ -226,207 +213,206 @@ th:hover {
     <div id="ratingError" class="error"></div>
 </div>
 
-<script>
-// ======================== GOOGLE SHEETS ССЫЛКИ ========================
-const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
-const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
-// Замените ссылку ниже на вашу реальную CSV-ссылку листа events (столбцы: title, start, end, description)
-const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv";
-// ======================================================================
+<script type="module">
+    import { Calendar } from '@schedule-x/calendar'
+    import { createEventsServicePlugin } from '@schedule-x/events-service'
+    import '@schedule-x/theme-default'
 
-// Парсер CSV (с поддержкой кавычек)
-function parseCSV(text) {
-    const rows = [];
-    let row = [];
-    let current = '';
-    let insideQuotes = false;
-    for (let char of text) {
-        if (char === '"') insideQuotes = !insideQuotes;
-        else if (char === ',' && !insideQuotes) {
-            row.push(current);
-            current = '';
-        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-            if (current || row.length) {
+    // ---------------------- CSV ссылки ----------------------
+    const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
+    const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
+    const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv";
+    
+    // Парсер CSV (универсальный)
+    function parseCSV(text) {
+        const rows = [];
+        let row = [];
+        let current = '';
+        let insideQuotes = false;
+        for (let char of text) {
+            if (char === '"') insideQuotes = !insideQuotes;
+            else if (char === ',' && !insideQuotes) {
                 row.push(current);
-                rows.push(row);
-                row = [];
                 current = '';
+            } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+                if (current || row.length) {
+                    row.push(current);
+                    rows.push(row);
+                    row = [];
+                    current = '';
+                }
+            } else {
+                current += char;
             }
-        } else {
-            current += char;
+        }
+        if (current) row.push(current);
+        if (row.length) rows.push(row);
+        return rows;
+    }
+    
+    // ---------- РЕЙТИНГ ----------
+    let ratingData = [];
+    let sortDir = 1;
+    
+    async function loadRating() {
+        try {
+            const res = await fetch(RATING_URL);
+            if (!res.ok) throw new Error();
+            const text = await res.text();
+            const data = parseCSV(text).slice(1);
+            ratingData = data.map(r => ({
+                name: r[0] || "",
+                points: parseInt(r[1]) || 0,
+                projects: r[2] || ""
+            }));
+            const total = ratingData.reduce((sum, p) => sum + p.points, 0);
+            document.getElementById('totalPointsValue').innerText = total;
+            renderTable(ratingData);
+        } catch(e) {
+            document.getElementById('ratingError').innerText = "Ошибка загрузки рейтинга";
+            console.error(e);
         }
     }
-    if (current) row.push(current);
-    if (row.length) rows.push(row);
-    return rows;
-}
-
-// ======================== РЕЙТИНГ ========================
-let ratingData = [];
-let sortDir = 1;
-
-async function loadRating() {
-    try {
-        const res = await fetch(RATING_URL);
-        if (!res.ok) throw new Error();
-        const text = await res.text();
-        const data = parseCSV(text).slice(1);
-        ratingData = data.map(r => ({
-            name: r[0] || "",
-            points: parseInt(r[1]) || 0,
-            projects: r[2] || ""
-        }));
-        const total = ratingData.reduce((sum, p) => sum + p.points, 0);
-        document.getElementById('totalPointsValue').innerText = total;
-        renderTable(ratingData);
-    } catch(e) {
-        document.getElementById('ratingError').innerText = "Ошибка загрузки рейтинга";
-        console.error(e);
-    }
-}
-
-function renderTable(data) {
-    const tbody = document.querySelector("#ratingTable tbody");
-    tbody.innerHTML = "";
-    data.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${escapeHtml(row.name)}<\/td>
-            <td>${row.points}<\/td>
-            <td>${escapeHtml(row.projects)}<\/td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-document.getElementById("search").addEventListener("input", e => {
-    const val = e.target.value.toLowerCase();
-    const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
-    renderTable(filtered);
-});
-
-document.querySelectorAll("th").forEach(th => {
-    th.addEventListener("click", () => {
-        const col = th.dataset.col;
-        ratingData.sort((a, b) => {
-            let av = a[col], bv = b[col];
-            if (col === "points") { av = Number(av); bv = Number(bv); }
-            return av > bv ? 1 * sortDir : -1 * sortDir;
-        });
-        sortDir *= -1;
-        renderTable(ratingData);
-    });
-});
-
-// ======================== РУКОВОДСТВО ========================
-const ROLE_ORDER = [
-    "Председатель Совета СНО",
-    "Заместитель председателя Совета СНО, координатор по организационной работе",
-    "Заместитель председателя Совета СНО, координатор по работе с СНК",
-    "Координатор по информационной работе",
-    "Секретарь",
-    "Советник председателя"
-];
-
-async function loadLeadership() {
-    try {
-        const res = await fetch(LEAD_URL);
-        if (!res.ok) throw new Error();
-        const text = await res.text();
-        const data = parseCSV(text).slice(1);
-        let leaders = data.map(r => ({
-            role: r[0],
-            name: r[1],
-            photo: r[2]
-        }));
-        leaders.sort((a,b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
-        const container = document.getElementById("leadership");
-        container.innerHTML = "";
-        leaders.forEach(l => {
-            const card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = `
-                ${l.photo ? `<img src="images/${l.photo}" onerror="this.style.display='none'">` : ""}
-                <div class="role">${escapeHtml(l.role)}</div>
-                <div class="name">${escapeHtml(l.name)}</div>
+    
+    function renderTable(data) {
+        const tbody = document.querySelector("#ratingTable tbody");
+        tbody.innerHTML = "";
+        data.forEach(row => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${escapeHtml(row.name)}<\/td>
+                <td>${row.points}<\/td>
+                <td>${escapeHtml(row.projects)}<\/td>
             `;
-            container.appendChild(card);
+            tbody.appendChild(tr);
         });
-    } catch(e) {
-        document.getElementById('leadError').innerText = "Ошибка загрузки состава";
-        console.error(e);
     }
-}
-
-// ======================== КАЛЕНДАРЬ (упрощённый, без сжатия) ========================
-let calendar;
-
-async function loadEvents() {
-    if (!EVENTS_URL || EVENTS_URL.includes("gid=123456789")) {
-        document.getElementById('calendar-container').innerHTML = '<p style="color:gray;">Укажите ссылку на Google Sheets с событиями (лист events: title, start, end, description) в переменной EVENTS_URL</p>';
-        return;
-    }
-    try {
-        const res = await fetch(EVENTS_URL);
-        if (!res.ok) throw new Error();
-        const text = await res.text();
-        const rows = parseCSV(text).slice(1);
-        const events = rows.map(row => ({
-            title: row[0] || "Без названия",
-            start: row[1] || "",
-            end: row[2] || undefined,
-            description: row[3] || ""
-        })).filter(ev => ev.start);
-
-        if (calendar) calendar.destroy();
-
-        const calendarEl = document.getElementById('calendar-container');
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'ru',
-            firstDay: 1,
-            events: events,
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek'
-            },
-            buttonText: {
-                today: 'Сегодня',
-                dayGridMonth: 'Месяц',
-                timeGridWeek: 'Неделя'
-            },
-            eventClick: function(info) {
-                const desc = info.event.extendedProps.description;
-                if (desc) alert(info.event.title + "\n\n" + desc);
-                else alert(info.event.title);
-            },
-            contentHeight: 'auto',
-            // Важно: не ограничиваем количество событий в ячейке
-            dayMaxEvents: false,
-            // Убираем возможные конфликты с CSS
-            eventDisplay: 'block'
-        });
-        calendar.render();
-    } catch(e) {
-        console.error('Ошибка загрузки событий:', e);
-        document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь. Проверьте ссылку на CSV и формат дат (YYYY-MM-DD).</p>';
-    }
-}
-
-function escapeHtml(str) {
-    if (!str) return "";
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
+    
+    document.getElementById("search").addEventListener("input", e => {
+        const val = e.target.value.toLowerCase();
+        const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
+        renderTable(filtered);
     });
-}
-
-loadRating();
-loadLeadership();
-loadEvents();
+    
+    document.querySelectorAll("th").forEach(th => {
+        th.addEventListener("click", () => {
+            const col = th.dataset.col;
+            ratingData.sort((a, b) => {
+                let av = a[col], bv = b[col];
+                if (col === "points") { av = Number(av); bv = Number(bv); }
+                return av > bv ? 1 * sortDir : -1 * sortDir;
+            });
+            sortDir *= -1;
+            renderTable(ratingData);
+        });
+    });
+    
+    // ---------- РУКОВОДСТВО ----------
+    const ROLE_ORDER = [
+        "Председатель Совета СНО",
+        "Заместитель председателя Совета СНО, координатор по организационной работе",
+        "Заместитель председателя Совета СНО, координатор по работе с СНК",
+        "Координатор по информационной работе",
+        "Секретарь",
+        "Советник председателя"
+    ];
+    
+    async function loadLeadership() {
+        try {
+            const res = await fetch(LEAD_URL);
+            if (!res.ok) throw new Error();
+            const text = await res.text();
+            const data = parseCSV(text).slice(1);
+            let leaders = data.map(r => ({
+                role: r[0],
+                name: r[1],
+                photo: r[2]
+            }));
+            leaders.sort((a,b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
+            const container = document.getElementById("leadership");
+            container.innerHTML = "";
+            leaders.forEach(l => {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.innerHTML = `
+                    ${l.photo ? `<img src="images/${l.photo}" onerror="this.style.display='none'">` : ""}
+                    <div class="role">${escapeHtml(l.role)}</div>
+                    <div class="name">${escapeHtml(l.name)}</div>
+                `;
+                container.appendChild(card);
+            });
+        } catch(e) {
+            document.getElementById('leadError').innerText = "Ошибка загрузки состава";
+            console.error(e);
+        }
+    }
+    
+    // ---------- КАЛЕНДАРЬ Schedule-X ----------
+    let calendarInstance = null;
+    const eventsService = createEventsServicePlugin();
+    
+    async function loadEvents() {
+        try {
+            const res = await fetch(EVENTS_URL);
+            if (!res.ok) throw new Error();
+            const text = await res.text();
+            const rows = parseCSV(text).slice(1);
+            const events = rows.map(row => {
+                let start = row[1]?.trim();
+                let end = row[2]?.trim();
+                // если дата без времени — добавляем время 00:00
+                if (start && !start.includes(':')) start = start + ' 00:00';
+                if (end && !end.includes(':')) end = end + ' 23:59';
+                return {
+                    id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(),
+                    title: row[0] || "Без названия",
+                    start: start,
+                    end: end,
+                    description: row[3] || ""
+                };
+            }).filter(ev => ev.start);
+            
+            if (calendarInstance) {
+                // обновляем события
+                eventsService.setEvents(events);
+            } else {
+                const calendarEl = document.getElementById('calendar-container');
+                calendarInstance = new Calendar({
+                    views: ['month', 'week', 'day'],
+                    defaultView: 'month',
+                    events: events,
+                    locale: 'ru',
+                    firstDayOfWeek: 1,
+                    plugins: [eventsService],
+                    callbacks: {
+                        onEventClick: (event) => {
+                            const desc = event.description;
+                            if (desc) alert(event.title + "\n\n" + desc);
+                            else alert(event.title);
+                        }
+                    }
+                });
+                calendarInstance.render(calendarEl);
+            }
+        } catch(e) {
+            console.error('Ошибка загрузки событий:', e);
+            document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь. Проверьте ссылку на CSV и формат дат (YYYY-MM-DD или YYYY-MM-DD HH:MM).</p>';
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    loadRating();
+    loadLeadership();
+    loadEvents();
 </script>
 </body>
 </html>
