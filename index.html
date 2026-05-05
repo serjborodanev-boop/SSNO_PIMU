@@ -131,27 +131,28 @@ th:hover {
     color: red;
     margin-top: 10px;
 }
-
 /* ---------- КАЛЕНДАРЬ ---------- */
-.calendar-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin-bottom: 30px;
-}
-.calendar-grid {
+.calendar-container {
     background: white;
     border-radius: 12px;
-    padding: 15px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    min-width: 700px;
+    margin-bottom: 30px;
+}
+/* Заголовок (sticky) */
+.calendar-sticky-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    padding: 15px 15px 0 15px;
+    border-radius: 12px 12px 0 0;
 }
 .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    margin-bottom: 10px;
+    flex-wrap: nowrap;
     gap: 10px;
 }
 .calendar-nav button {
@@ -162,6 +163,7 @@ th:hover {
     border-radius: 8px;
     cursor: pointer;
     margin: 0 4px;
+    white-space: nowrap;
 }
 .calendar-nav button:hover {
     background: #e06a00;
@@ -169,6 +171,17 @@ th:hover {
 .month-year {
     font-size: 1.5rem;
     font-weight: 600;
+    text-align: center;
+    flex: 1;
+}
+/* Горизонтальный скролл только для сетки */
+.calendar-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 15px 15px 15px;
+}
+.calendar-grid {
+    min-width: 700px;
 }
 .weekdays {
     display: grid;
@@ -189,25 +202,25 @@ th:hover {
     border: 1px solid #ddd;
 }
 .day-cell {
-    height: 80px;               /* изменено на 80px */
+    height: 80px;
     overflow-y: auto;
     border: 1px solid #eee;
-    padding: 4px;
+    padding: 6px;
     background-color: white;
 }
 .day-number {
     font-weight: bold;
     text-align: right;
-    margin-bottom: 2px;
-    font-size: 12px;
+    margin-bottom: 4px;
+    font-size: 14px;
 }
 .event-bar {
     background-color: #ffefdb;
-    border-left: 3px solid #ff7a00;
-    border-radius: 3px;
-    padding: 2px 4px;
+    border-left: 4px solid #ff7a00;
+    border-radius: 4px;
+    padding: 4px 6px;
     margin-top: 2px;
-    font-size: 10px;
+    font-size: 12px;
     white-space: nowrap;
     overflow-x: hidden;
     text-overflow: ellipsis;
@@ -217,17 +230,7 @@ th:hover {
 .event-bar:hover {
     background-color: #ffe0b5;
 }
-@media (max-width: 768px) {
-    .day-cell {
-        height: 70px;
-    }
-    .event-bar {
-        font-size: 9px;
-        padding: 1px 3px;
-    }
-}
-
-/* ---------- МОДАЛЬНОЕ ОКНО ---------- */
+/* Модальное окно */
 .modal {
     display: none;
     position: fixed;
@@ -237,36 +240,50 @@ th:hover {
     width: 100%;
     height: 100%;
     background-color: rgba(0,0,0,0.5);
-    align-items: center;
     justify-content: center;
+    align-items: center;
 }
 .modal-content {
-    background-color: white;
+    background: white;
     border-radius: 16px;
-    max-width: 400px;
+    max-width: 300px;
     width: 80%;
     padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    text-align: center;
     position: relative;
-    font-family: 'Inter', sans-serif;
 }
 .modal-content h3 {
     margin-top: 0;
     color: #ff7a00;
 }
 .modal-content p {
-    margin: 10px 0;
+    margin: 8px 0;
 }
 .close-modal {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    font-size: 24px;
+    background: #ff7a00;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
     cursor: pointer;
-    color: #aaa;
+    margin-top: 12px;
 }
-.close-modal:hover {
-    color: #333;
+@media (max-width: 768px) {
+    .day-cell {
+        height: 70px;
+    }
+    .event-bar {
+        font-size: 10px;
+        padding: 2px 4px;
+    }
+    .month-year {
+        font-size: 1.2rem;
+    }
+    .calendar-nav button {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
 }
 </style>
 </head>
@@ -286,7 +303,7 @@ th:hover {
     <div id="leadError" class="error"></div>
 
     <h2>Календарь событий</h2>
-    <div class="calendar-wrapper" id="calendar-wrapper"></div>
+    <div id="calendar-main"></div>
 
     <h2>Рейтинг</h2>
     <div class="total-card">
@@ -311,10 +328,10 @@ th:hover {
 <!-- Модальное окно -->
 <div id="eventModal" class="modal">
     <div class="modal-content">
-        <span class="close-modal">&times;</span>
         <h3 id="modalTitle"></h3>
         <p id="modalDesc"></p>
         <p id="modalDates"></p>
+        <button class="close-modal" id="closeModalBtn">Закрыть</button>
     </div>
 </div>
 
@@ -324,21 +341,6 @@ const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk
 const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
 const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv";
 // ======================================================================
-
-// Модальное окно (управление)
-const modal = document.getElementById('eventModal');
-const modalTitle = document.getElementById('modalTitle');
-const modalDesc = document.getElementById('modalDesc');
-const modalDates = document.getElementById('modalDates');
-const closeModal = document.querySelector('.close-modal');
-function showModal(title, description, startStr, endStr) {
-    modalTitle.textContent = title;
-    modalDesc.textContent = description || "Нет описания";
-    modalDates.textContent = `${startStr} – ${endStr}`;
-    modal.style.display = 'flex';
-}
-closeModal.onclick = () => modal.style.display = 'none';
-window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
 // Парсер CSV
 function parseCSV(text) {
@@ -388,12 +390,9 @@ function formatDateKey(date) {
     let d = String(date.getUTCDate()).padStart(2,'0');
     return `${y}-${m}-${d}`;
 }
-function formatDateReadable(date) {
-    if (!date) return '';
-    let d = date.getUTCDate();
-    let m = date.getUTCMonth() + 1;
-    let y = date.getUTCFullYear();
-    return `${d}.${m}.${y}`;
+function formatFullMonthYear(year, month) {
+    const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+    return `${monthNames[month]} ${year}`;
 }
 
 // ---------- РЕЙТИНГ ----------
@@ -424,7 +423,11 @@ function renderTable(data) {
     tbody.innerHTML = "";
     data.forEach(row => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${escapeHtml(row.name)}<\/td><td>${row.points}<\/td><td>${escapeHtml(row.projects)}<\/td>`;
+        tr.innerHTML = `
+            <td>${escapeHtml(row.name)}<\/td>
+            <td>${row.points}<\/td>
+            <td>${escapeHtml(row.projects)}<\/td>
+        `;
         tbody.appendChild(tr);
     });
 }
@@ -519,7 +522,7 @@ async function loadEvents() {
         }
     } catch(e) {
         console.error('Ошибка загрузки событий:', e);
-        document.getElementById('calendar-wrapper').innerHTML = '<p style="color:red;">Не удалось загрузить календарь</p>';
+        document.getElementById('calendar-main').innerHTML = '<p style="color:red;">Не удалось загрузить календарь</p>';
     }
 }
 
@@ -537,6 +540,7 @@ function renderCalendar(year, month) {
         days.push(date);
     }
     
+    // Подготовка событий
     const eventsByDay = {};
     days.forEach(date => {
         const key = formatDateKey(date);
@@ -558,6 +562,7 @@ function renderCalendar(year, month) {
         });
     });
     
+    // Убираем дубли
     for (let key in eventsByDay) {
         const unique = [];
         const seen = new Set();
@@ -571,23 +576,37 @@ function renderCalendar(year, month) {
         eventsByDay[key] = unique;
     }
     
-    const wrapper = document.getElementById('calendar-wrapper');
-    wrapper.innerHTML = '';
-    const gridDiv = document.createElement('div');
-    gridDiv.className = 'calendar-grid';
-    wrapper.appendChild(gridDiv);
+    // Создаём структуру календаря
+    const container = document.getElementById('calendar-main');
+    container.innerHTML = '';
     
+    const wrapperDiv = document.createElement('div');
+    wrapperDiv.className = 'calendar-container';
+    
+    // Sticky header
+    const stickyHeader = document.createElement('div');
+    stickyHeader.className = 'calendar-sticky-header';
     const headerDiv = document.createElement('div');
     headerDiv.className = 'calendar-header';
     headerDiv.innerHTML = `
-        <div class="month-year">${month+1}.${year}</div>
         <div class="calendar-nav">
             <button id="prevMonthBtn">◀ Пред.</button>
+        </div>
+        <div class="month-year">${formatFullMonthYear(year, month)}</div>
+        <div class="calendar-nav">
             <button id="nextMonthBtn">След. ▶</button>
         </div>
     `;
-    gridDiv.appendChild(headerDiv);
+    stickyHeader.appendChild(headerDiv);
+    wrapperDiv.appendChild(stickyHeader);
     
+    // Блок с прокруткой
+    const scrollDiv = document.createElement('div');
+    scrollDiv.className = 'calendar-scroll';
+    const gridDiv = document.createElement('div');
+    gridDiv.className = 'calendar-grid';
+    
+    // Дни недели
     const weekdaysDiv = document.createElement('div');
     weekdaysDiv.className = 'weekdays';
     const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -625,14 +644,18 @@ function renderCalendar(year, month) {
             if (!ev.isFirstDay) {
                 displayText = '→ ' + ev.title;
             }
-            if (displayText.length > 22) displayText = displayText.slice(0,19) + '…';
+            if (displayText.length > 28) displayText = displayText.slice(0,25) + '…';
             eventDiv.textContent = displayText;
-            const startStr = formatDateReadable(ev.start);
-            const endStr = formatDateReadable(ev.end);
+            const startStr = formatDateKey(ev.start);
+            const endStr = formatDateKey(ev.end);
             eventDiv.title = `${ev.title}${ev.description ? ': '+ev.description : ''} (${startStr} – ${endStr})`;
             eventDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
-                showModal(ev.title, ev.description, startStr, endStr);
+                // Показываем модальное окно
+                document.getElementById('modalTitle').innerText = ev.title;
+                document.getElementById('modalDesc').innerText = ev.description || 'Нет описания';
+                document.getElementById('modalDates').innerText = `${startStr} — ${endStr}`;
+                document.getElementById('eventModal').style.display = 'flex';
             });
             cell.appendChild(eventDiv);
         });
@@ -640,7 +663,11 @@ function renderCalendar(year, month) {
         daysGrid.appendChild(cell);
     });
     gridDiv.appendChild(daysGrid);
+    scrollDiv.appendChild(gridDiv);
+    wrapperDiv.appendChild(scrollDiv);
+    container.appendChild(wrapperDiv);
     
+    // Обработчики кнопок
     document.getElementById('prevMonthBtn').addEventListener('click', () => {
         if (currentMonth === 0) {
             currentMonth = 11;
@@ -667,6 +694,12 @@ function initCalendar() {
     currentMonth = now.getMonth();
     renderCalendar(currentYear, currentMonth);
 }
+
+// Модальное окно
+const modal = document.getElementById('eventModal');
+const closeBtn = document.getElementById('closeModalBtn');
+closeBtn.onclick = () => { modal.style.display = 'none'; };
+window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
 function escapeHtml(str) {
     if (!str) return "";
