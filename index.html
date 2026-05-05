@@ -5,34 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Совет СНО ПИМУ</title>
 
-<!-- PWA manifest и мета-теги -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ff7a00">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="apple-touch-icon" href="images/icons/icon-192.png">
-
+<!-- Шрифт Inter -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
+<!-- FullCalendar CSS + JS (с поддержкой multiMonthYear) -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
 <style>
-/* ===== СТИЛИ (проверенные, работающие) ===== */
 body {
     margin: 0;
     font-family: 'Inter', sans-serif;
     background: #f9f9f9;
     color: #333;
 }
+
+/* HEADER */
 header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 16px 24px;
     background: white;
     border-bottom: 2px solid #eee;
-}
-.header-left {
-    display: flex;
-    align-items: center;
 }
 .logo {
     width: 50px;
@@ -54,20 +48,18 @@ header {
     color: #555;
     margin-top: 5px;
 }
-.install-btn {
-    background: #ff7a00;
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: none;
+.accent {
+    color: #ff7a00;
 }
+
+/* CONTAINER */
 .container {
-    max-width: 1200px;
+    max-width: 1300px;
     margin: auto;
     padding: 20px;
 }
+
+/* КАРТОЧКИ РУКОВОДСТВА */
 .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -96,6 +88,8 @@ header {
     font-weight: 600;
     margin-top: 5px;
 }
+
+/* РЕЙТИНГ */
 .total-card {
     background: #fff4e6;
     border-left: 5px solid #ff7a00;
@@ -140,13 +134,30 @@ tr:nth-child(even) {
 th:hover {
     background: #e6e6e6;
 }
-.accent {
-    color: #ff7a00;
-}
 .error {
     color: red;
     margin-top: 10px;
 }
+
+/* КАЛЕНДАРЬ */
+#calendar-container {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+.fc {
+    font-family: 'Inter', sans-serif;
+}
+.fc .fc-button-primary {
+    background-color: #ff7a00;
+    border-color: #e06a00;
+}
+.fc .fc-button-primary:hover {
+    background-color: #e06a00;
+}
+
 @media (max-width: 600px) {
     .title { font-size: 18px; }
     .slogan { font-size: 12px; }
@@ -157,22 +168,25 @@ th:hover {
 <body>
 
 <header>
-    <div class="header-left">
-        <img src="images/logo.png" class="logo" alt="Логотип" onerror="this.style.display='none'">
-        <div class="header-text">
-            <div class="title">Совет <span class="accent">СНО ПИМУ</span></div>
-            <div class="slogan">Развиваем тех, кто меняет медицину</div>
-        </div>
+    <img src="images/logo.png" class="logo" alt="Логотип" onerror="this.style.display='none'">
+    <div class="header-text">
+        <div class="title">Совет <span class="accent">СНО ПИМУ</span></div>
+        <div class="slogan">Развиваем тех, кто меняет медицину</div>
     </div>
-    <button id="installBtn" class="install-btn">Установить</button>
 </header>
 
 <div class="container">
+    <!-- Руководящий состав -->
     <h2>Руководящий состав</h2>
     <div class="cards" id="leadership"></div>
     <div id="leadError" class="error"></div>
 
-    <h2 style="margin-top:40px;">Рейтинг</h2>
+    <!-- Календарь -->
+    <h2 style="margin-top: 40px;">Календарь событий (весь год)</h2>
+    <div id="calendar-container"></div>
+
+    <!-- Рейтинг -->
+    <h2>Рейтинг</h2>
     <div class="total-card">
         Общая сумма НОМУС-коинов: <span id="totalPointsValue">0</span>
     </div>
@@ -193,10 +207,12 @@ th:hover {
 </div>
 
 <script>
-// ===================== ВАШИ РАБОЧИЕ ССЫЛКИ =====================
+// ======================== GOOGLE SHEETS ССЫЛКИ ========================
 const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
 const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
-// =================================================================
+// ЗАМЕНИТЕ НА ВАШУ ССЫЛКУ НА ЛИСТ С СОБЫТИЯМИ (столбцы: title, start, end, description)
+const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv"; // ЗАМЕНИТЕ
+// ======================================================================
 
 // Порядок должностей
 const ROLE_ORDER = [
@@ -208,7 +224,7 @@ const ROLE_ORDER = [
     "Советник председателя"
 ];
 
-// ПРАВИЛЬНЫЙ ПАРСЕР CSV (поддержка кавычек)
+// Универсальный парсер CSV (с кавычками)
 function parseCSV(text) {
     const rows = [];
     let row = [];
@@ -237,7 +253,7 @@ function parseCSV(text) {
     return rows;
 }
 
-// РЕЙТИНГ
+// ======================== РЕЙТИНГ ========================
 let ratingData = [];
 let sortDir = 1;
 
@@ -246,7 +262,7 @@ async function loadRating() {
         const res = await fetch(RATING_URL);
         if (!res.ok) throw new Error();
         const text = await res.text();
-        const data = parseCSV(text).slice(1); // отрезаем заголовок
+        const data = parseCSV(text).slice(1);
         ratingData = data.map(r => ({
             name: r[0] || "",
             points: parseInt(r[1]) || 0,
@@ -275,14 +291,12 @@ function renderTable(data) {
     });
 }
 
-// Поиск
 document.getElementById("search").addEventListener("input", e => {
     const val = e.target.value.toLowerCase();
     const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
     renderTable(filtered);
 });
 
-// Сортировка
 document.querySelectorAll("th").forEach(th => {
     th.addEventListener("click", () => {
         const col = th.dataset.col;
@@ -296,7 +310,7 @@ document.querySelectorAll("th").forEach(th => {
     });
 });
 
-// РУКОВОДСТВО
+// ======================== РУКОВОДСТВО ========================
 async function loadLeadership() {
     try {
         const res = await fetch(LEAD_URL);
@@ -327,6 +341,71 @@ async function loadLeadership() {
     }
 }
 
+// ======================== КАЛЕНДАРЬ (FullCalendar, multiMonthYear) ========================
+let calendar;
+
+async function loadEvents() {
+    // Проверяем, что ссылка не дефолтная
+    if (!EVENTS_URL || EVENTS_URL.includes("gid=123456789")) {
+        document.getElementById('calendar-container').innerHTML = '<p style="color:gray;">Укажите ссылку на Google Sheets с событиями (лист events: title, start, end, description) в переменной EVENTS_URL</p>';
+        return;
+    }
+    try {
+        const res = await fetch(EVENTS_URL);
+        if (!res.ok) throw new Error();
+        const text = await res.text();
+        const rows = parseCSV(text).slice(1); // первая строка — заголовки
+        
+        const events = rows.map(row => ({
+            title: row[0] || "Без названия",
+            start: row[1] || "",
+            end: row[2] || undefined,
+            description: row[3] || ""
+        })).filter(ev => ev.start);
+
+        // Если календарь уже создан — уничтожаем и создаём заново
+        if (calendar) {
+            calendar.destroy();
+        }
+
+        const calendarEl = document.getElementById('calendar-container');
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'multiMonthYear',   // показываем сразу много месяцев (весь год)
+            locale: 'ru',
+            firstDay: 1,                     // неделя начинается с понедельника
+            events: events,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'multiMonthYear'      // кнопка переключения в год (но можно и dayGridMonth добавить)
+            },
+            buttonText: {
+                today: 'Сегодня',
+                month: 'Месяц',
+                multiMonthYear: 'Год'
+            },
+            // При клике на событие показываем описание
+            eventClick: function(info) {
+                let desc = info.event.extendedProps.description;
+                if (desc) {
+                    alert(info.event.title + "\n\n" + desc);
+                } else {
+                    alert(info.event.title);
+                }
+            },
+            // Чтобы много месяцев не растягивало слишком широко, задаём желаемую высоту
+            contentHeight: 'auto',
+            aspectRatio: 2.5,
+            // Количество отображаемых месяцев можно настроить, но multiMonthYear по умолчанию показывает 3x4 (12 месяцев)
+        });
+        calendar.render();
+
+    } catch(e) {
+        console.error('Ошибка загрузки событий:', e);
+        document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь. Проверьте ссылку на CSV и формат данных.</p>';
+    }
+}
+
 function escapeHtml(str) {
     if (!str) return "";
     return str.replace(/[&<>]/g, function(m) {
@@ -337,32 +416,10 @@ function escapeHtml(str) {
     });
 }
 
-// КНОПКА УСТАНОВКИ (PWA)
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-    document.getElementById('installBtn').style.display = 'block';
-});
-document.getElementById('installBtn').onclick = async () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        document.getElementById('installBtn').style.display = 'none';
-    }
-};
-
-// SERVICE WORKER
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(reg => {
-        console.log('SW registered', reg);
-    }).catch(err => console.log('SW error', err));
-}
-
-// ЗАГРУЗКА ДАННЫХ
+// Старт загрузок
 loadRating();
 loadLeadership();
+loadEvents();
 </script>
 </body>
 </html>
