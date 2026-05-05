@@ -131,8 +131,9 @@ th:hover {
     color: red;
     margin-top: 10px;
 }
-/* Календарь */
-.calendar-wrapper {
+
+/* ---------- КАЛЕНДАРЬ НА GRID С ОБЪЕДИНЕНИЕМ СОБЫТИЙ ---------- */
+.calendar-grid {
     background: white;
     border-radius: 12px;
     padding: 15px;
@@ -164,77 +165,61 @@ th:hover {
     font-size: 1.5rem;
     font-weight: 600;
 }
-.calendar-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 600px;
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f0f0f0;
+    border-radius: 8px;
+    margin-bottom: 8px;
 }
-.calendar-table th, .calendar-table td {
+.weekday {
+    padding: 10px;
+    text-align: center;
+    font-weight: 600;
+}
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: white;
     border: 1px solid #ddd;
-    text-align: left;
-    vertical-align: top;
+}
+.day-cell {
+    min-height: 100px;
+    border: 1px solid #eee;
     padding: 6px;
-    width: 14%;
+    vertical-align: top;
+    position: relative;
     background-color: white;
-}
-.calendar-table td {
-    height: auto;
-    min-height: 90px;
-    cursor: pointer;
-}
-.calendar-table td:hover {
-    background-color: #fff4e6;
 }
 .day-number {
     font-weight: bold;
     text-align: right;
     margin-bottom: 4px;
+    font-size: 14px;
 }
-.event-item {
+.event-bar {
     background-color: #ffefdb;
-    border-left: 3px solid #ff7a00;
-    margin-top: 2px;
-    padding: 2px 4px;
-    font-size: 12px;
+    border-left: 4px solid #ff7a00;
     border-radius: 4px;
+    padding: 4px 6px;
+    margin-top: 2px;
+    font-size: 12px;
     white-space: nowrap;
     overflow-x: hidden;
     text-overflow: ellipsis;
+    cursor: pointer;
+    transition: 0.1s;
 }
-.event-item strong {
-    font-weight: 600;
-    color: #e06a00;
-}
-.more-events {
-    font-size: 11px;
-    color: #777;
-    text-align: center;
-    margin-top: 2px;
+.event-bar:hover {
+    background-color: #ffe0b5;
 }
 @media (max-width: 768px) {
-    .container {
-        padding: 12px;
+    .day-cell {
+        min-height: 70px;
     }
-    .title {
-        font-size: 18px;
-    }
-    .cards {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    }
-    .card img {
-        width: 90px;
-        height: 90px;
-    }
-    th, td {
-        padding: 8px;
-        font-size: 14px;
-    }
-    .calendar-table td {
-        min-height: 65px;
-    }
-    .event-item {
+    .event-bar {
         font-size: 10px;
-        padding: 1px 2px;
+        padding: 2px 4px;
     }
 }
 </style>
@@ -255,7 +240,7 @@ th:hover {
     <div id="leadError" class="error"></div>
 
     <h2>Календарь событий</h2>
-    <div class="calendar-wrapper" id="calendar-wrapper"></div>
+    <div id="calendar-container"></div>
 
     <h2>Рейтинг</h2>
     <div class="total-card">
@@ -311,6 +296,29 @@ function parseCSV(text) {
     return rows;
 }
 
+// Нормализация даты из CSV в объект Date (берем только дату без времени)
+function parseDateFromString(raw) {
+    if (!raw) return null;
+    let str = raw.trim();
+    let match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+        return new Date(Date.UTC(match[1], match[2]-1, match[3]));
+    }
+    match = str.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+    if (match) {
+        return new Date(Date.UTC(match[3], match[2]-1, match[1]));
+    }
+    return null;
+}
+
+function formatDateKey(date) {
+    if (!date) return null;
+    let y = date.getUTCFullYear();
+    let m = String(date.getUTCMonth() + 1).padStart(2,'0');
+    let d = String(date.getUTCDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+}
+
 // ---------- РЕЙТИНГ ----------
 let ratingData = [];
 let sortDir = 1;
@@ -334,7 +342,6 @@ async function loadRating() {
         console.error(e);
     }
 }
-
 function renderTable(data) {
     const tbody = document.querySelector("#ratingTable tbody");
     tbody.innerHTML = "";
@@ -348,13 +355,11 @@ function renderTable(data) {
         tbody.appendChild(tr);
     });
 }
-
 document.getElementById("search").addEventListener("input", e => {
     const val = e.target.value.toLowerCase();
     const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
     renderTable(filtered);
 });
-
 document.querySelectorAll("th").forEach(th => {
     th.addEventListener("click", () => {
         const col = th.dataset.col;
@@ -377,7 +382,6 @@ const ROLE_ORDER = [
     "Секретарь",
     "Советник председателя"
 ];
-
 async function loadLeadership() {
     try {
         const res = await fetch(LEAD_URL);
@@ -408,9 +412,9 @@ async function loadLeadership() {
     }
 }
 
-// ---------- КАЛЕНДАРЬ с текстовым отображением событий ----------
+// ---------- КАЛЕНДАРЬ С ОБЪЕДИНЕНИЕМ (GRID) ----------
 let currentYear, currentMonth;
-let eventsByDate = {}; // { "YYYY-MM-DD": [ {title, description} ] }
+let rawEvents = []; // массив событий с startDate, endDate, title, description
 
 async function loadEvents() {
     try {
@@ -418,128 +422,174 @@ async function loadEvents() {
         if (!res.ok) throw new Error();
         const text = await res.text();
         const rows = parseCSV(text).slice(1);
-        eventsByDate = {};
+        rawEvents = [];
         rows.forEach(row => {
             let title = row[0]?.trim() || "Событие";
             let startRaw = row[1]?.trim();
+            let endRaw = row[2]?.trim() || startRaw;
             let description = row[3]?.trim() || "";
             if (!startRaw) return;
-            let dateStr = null;
-            // Поддержка YYYY-MM-DD и DD.MM.YYYY
-            let match = startRaw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (match) {
-                dateStr = `${match[1]}-${match[2]}-${match[3]}`;
-            } else {
-                match = startRaw.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
-                if (match) {
-                    dateStr = `${match[3]}-${match[2]}-${match[1]}`;
-                }
-            }
-            if (!dateStr) return;
-            if (!eventsByDate[dateStr]) eventsByDate[dateStr] = [];
-            eventsByDate[dateStr].push({ title, description });
+            let startDate = parseDateFromString(startRaw);
+            let endDate = parseDateFromString(endRaw);
+            if (!startDate) return;
+            if (!endDate) endDate = startDate;
+            if (startDate > endDate) { let tmp = startDate; startDate = endDate; endDate = tmp; }
+            rawEvents.push({
+                title,
+                start: startDate,
+                end: endDate,
+                description
+            });
         });
         if (currentYear !== undefined) {
             renderCalendar(currentYear, currentMonth);
         }
     } catch(e) {
         console.error('Ошибка загрузки событий:', e);
-        document.getElementById('calendar-wrapper').innerHTML = '<p style="color:red;">Не удалось загрузить календарь</p>';
+        document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь</p>';
     }
 }
 
 function renderCalendar(year, month) {
-    const firstDayOfMonth = new Date(year, month, 1);
-    const startWeekday = firstDayOfMonth.getDay(); // 0 воскресенье
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfMonth = new Date(Date.UTC(year, month, 1));
+    const startWeekday = firstDayOfMonth.getUTCDay(); // 0 воскресенье
+    // Нам нужно начать с понедельника (1). Сдвиг: если воскресенье (0), то двигаемся на 6 дней назад
+    let startDate = new Date(firstDayOfMonth);
+    let offset = (startWeekday === 0 ? 6 : startWeekday - 1);
+    startDate.setUTCDate(startDate.getUTCDate() - offset);
     
-    const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-    let startOffset = startWeekday === 0 ? 6 : startWeekday - 1;
+    // Строим сетку 42 дня (6 недель)
+    const days = [];
+    for (let i = 0; i < 42; i++) {
+        let date = new Date(startDate);
+        date.setUTCDate(date.getUTCDate() + i);
+        days.push(date);
+    }
     
-    let calendarHtml = `<div class="calendar-header">
+    // Группируем события по дням (для ячеек)
+    const eventsByDay = {};
+    days.forEach(date => {
+        const key = formatDateKey(date);
+        eventsByDay[key] = [];
+    });
+    
+    // Для каждого события определим, на какие дни оно попадает в этом месяце
+    const eventRanges = []; // { startIndex, endIndex, title, description, eventId }
+    days.forEach((date, idx) => {
+        const dateKey = formatDateKey(date);
+        rawEvents.forEach((ev, evIdx) => {
+            if (date >= ev.start && date <= ev.end) {
+                // Проверяем, есть ли уже такое событие в списке для этого дня
+                if (!eventsByDay[dateKey].some(e => e.title === ev.title && e.description === ev.description && e.start === ev.start)) {
+                    eventsByDay[dateKey].push({
+                        title: ev.title,
+                        description: ev.description,
+                        start: ev.start,
+                        end: ev.end,
+                        eventId: evIdx
+                    });
+                }
+            }
+        });
+    });
+    
+    const container = document.getElementById('calendar-container');
+    container.innerHTML = '';
+    
+    // Заголовок и навигация
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'calendar-header';
+    headerDiv.innerHTML = `
         <div class="month-year">${month+1}.${year}</div>
         <div class="calendar-nav">
             <button id="prevMonthBtn">◀ Пред.</button>
             <button id="nextMonthBtn">След. ▶</button>
         </div>
-    </div>
-    <table class="calendar-table">
-        <thead><tr>${weekdays.map(day => `<th>${day}</th>`).join('')}</tr></thead>
-        <tbody><tr>`;
+    `;
+    container.appendChild(headerDiv);
     
-    let dayCount = 1;
-    for (let i = 0; i < 42; i++) {
-        if (i >= startOffset && dayCount <= daysInMonth) {
-            const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(dayCount).padStart(2,'0')}`;
-            const events = eventsByDate[dateKey] || [];
-            // Строим HTML событий
-            let eventsHtml = '';
-            const maxDisplay = 3; // показываем максимум 3 события в ячейке
-            for (let idx = 0; idx < Math.min(events.length, maxDisplay); idx++) {
-                const ev = events[idx];
-                let shortTitle = ev.title.length > 20 ? ev.title.slice(0,18)+'…' : ev.title;
-                eventsHtml += `<div class="event-item" title="${escapeHtml(ev.title)}${ev.description ? ': ' + escapeHtml(ev.description) : ''}">
-                    <strong>•</strong> ${escapeHtml(shortTitle)}
-                </div>`;
-            }
-            if (events.length > maxDisplay) {
-                eventsHtml += `<div class="more-events">+ ещё ${events.length - maxDisplay}</div>`;
-            }
-            calendarHtml += `<td data-date="${dateKey}">
-                <div class="day-number">${dayCount}</div>
-                ${eventsHtml}
-            </td>`;
-            dayCount++;
-        } else {
-            calendarHtml += `<td style="background:#f9f9f9;"></td>`;
-        }
-        if ((i+1) % 7 === 0 && i !== 41) {
-            calendarHtml += `</tr><tr>`;
-        }
-    }
-    calendarHtml += `</tr></tbody></table>`;
-    
-    document.getElementById('calendar-wrapper').innerHTML = calendarHtml;
-    
-    // Обработчики кликов на ячейках (для детального просмотра)
-    document.querySelectorAll('.calendar-table td[data-date]').forEach(cell => {
-        cell.addEventListener('click', () => {
-            const date = cell.getAttribute('data-date');
-            const events = eventsByDate[date] || [];
-            if (events.length === 0) {
-                alert('Нет событий на эту дату');
-            } else {
-                let msg = events.map(e => `${e.title}${e.description ? ': ' + e.description : ''}`).join('\n');
-                alert(`События на ${date}:\n${msg}`);
-            }
-        });
+    const weekdaysDiv = document.createElement('div');
+    weekdaysDiv.className = 'weekdays';
+    const weekdays = ['Пн', 'Вт', ' Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    weekdays.forEach(day => {
+        const d = document.createElement('div');
+        d.className = 'weekday';
+        d.textContent = day;
+        weekdaysDiv.appendChild(d);
     });
+    container.appendChild(weekdaysDiv);
     
-    // Обработчики кнопок навигации
-    const prevBtn = document.getElementById('prevMonthBtn');
-    const nextBtn = document.getElementById('nextMonthBtn');
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentMonth === 0) {
-                currentMonth = 11;
-                currentYear--;
-            } else {
-                currentMonth--;
+    const daysGrid = document.createElement('div');
+    daysGrid.className = 'calendar-days';
+    
+    // Отображаем дни
+    days.forEach((date, idx) => {
+        const dateKey = formatDateKey(date);
+        const dayNumber = date.getUTCDate();
+        const isCurrentMonth = date.getUTCMonth() === month;
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+        cell.style.backgroundColor = isCurrentMonth ? 'white' : '#f9f9f9';
+        const numDiv = document.createElement('div');
+        numDiv.className = 'day-number';
+        numDiv.textContent = dayNumber;
+        cell.appendChild(numDiv);
+        
+        // События этого дня
+        const dayEvents = eventsByDay[dateKey] || [];
+        // Чтобы не дублировать многодневные события в каждой ячейке, сгруппируем по уникальному id события
+        const uniqueEvents = [];
+        const seen = new Set();
+        dayEvents.forEach(ev => {
+            const id = ev.title + ev.start.toString();
+            if (!seen.has(id)) {
+                seen.add(id);
+                uniqueEvents.push(ev);
             }
-            renderCalendar(currentYear, currentMonth);
         });
-    }
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (currentMonth === 11) {
-                currentMonth = 0;
-                currentYear++;
-            } else {
-                currentMonth++;
-            }
-            renderCalendar(currentYear, currentMonth);
+        // Сортируем?
+        uniqueEvents.sort((a,b) => a.title.localeCompare(b.title));
+        
+        uniqueEvents.forEach(ev => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event-bar';
+            // Проверяем, первый ли это день события?
+            const startKey = formatDateKey(ev.start);
+            const isFirstDay = (startKey === dateKey);
+            let displayText = isFirstDay ? ev.title : '↳ ' + ev.title;
+            if (displayText.length > 25) displayText = displayText.slice(0,22)+'…';
+            eventDiv.textContent = displayText;
+            eventDiv.title = ev.title + (ev.description ? ': ' + ev.description : '') + (ev.end > ev.start ? ` (до ${formatDateKey(ev.end)})` : '');
+            eventDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                alert(`${ev.title}\n${ev.description ? ev.description : ''}\nДаты: ${startKey} – ${formatDateKey(ev.end)}`);
+            });
+            cell.appendChild(eventDiv);
         });
-    }
+        
+        daysGrid.appendChild(cell);
+    });
+    container.appendChild(daysGrid);
+    
+    // Навигация
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        if (currentMonth === 0) {
+            currentMonth = 11;
+            currentYear--;
+        } else {
+            currentMonth--;
+        }
+        renderCalendar(currentYear, currentMonth);
+    });
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        if (currentMonth === 11) {
+            currentMonth = 0;
+            currentYear++;
+        } else {
+            currentMonth++;
+        }
+        renderCalendar(currentYear, currentMonth);
+    });
 }
 
 function initCalendar() {
