@@ -4,30 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Совет СНО ПИМУ</title>
-
-<!-- Фавикон (логотип) -->
 <link rel="icon" href="images/logo.png" type="image/png">
-
-<!-- Шрифт Inter -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-
-<!-- FullCalendar CSS + JS (глобальная сборка) -->
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-
 <style>
-/* ----- БАЗОВЫЕ СТИЛИ ----- */
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 body {
     margin: 0;
     font-family: 'Inter', sans-serif;
     background: #f9f9f9;
     color: #333;
 }
-
-/* HEADER */
 header {
     display: flex;
     align-items: center;
@@ -56,18 +44,12 @@ header {
     color: #555;
     margin-top: 5px;
 }
-.accent {
-    color: #ff7a00;
-}
-
-/* CONTAINER */
+.accent { color: #ff7a00; }
 .container {
     max-width: 1300px;
     margin: auto;
     padding: 20px;
 }
-
-/* КАРТОЧКИ РУКОВОДСТВА */
 .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -88,16 +70,8 @@ header {
     border-radius: 50%;
     margin-bottom: 10px;
 }
-.role {
-    font-size: 14px;
-    color: #777;
-}
-.name {
-    font-weight: 600;
-    margin-top: 5px;
-}
-
-/* РЕЙТИНГ */
+.role { font-size: 14px; color: #777; }
+.name { font-weight: 600; margin-top: 5px; }
 .total-card {
     background: #fff4e6;
     border-left: 5px solid #ff7a00;
@@ -107,14 +81,8 @@ header {
     font-size: 18px;
     font-weight: 500;
 }
-.total-card span {
-    font-weight: 700;
-    color: #ff7a00;
-    font-size: 22px;
-}
-.search-box {
-    margin-bottom: 15px;
-}
+.total-card span { font-weight: 700; color: #ff7a00; font-size: 22px; }
+.search-box { margin-bottom: 15px; }
 .search-box input {
     width: 100%;
     padding: 10px;
@@ -130,26 +98,12 @@ table {
     overflow-x: auto;
     display: block;
 }
-th, td {
-    padding: 12px;
-    text-align: left;
-}
-th {
-    background: #f0f0f0;
-    cursor: pointer;
-}
-tr:nth-child(even) {
-    background: #fafafa;
-}
-th:hover {
-    background: #e6e6e6;
-}
-.error {
-    color: red;
-    margin-top: 10px;
-}
+th, td { padding: 12px; text-align: left; }
+th { background: #f0f0f0; cursor: pointer; }
+tr:nth-child(even) { background: #fafafa; }
+th:hover { background: #e6e6e6; }
+.error { color: red; margin-top: 10px; }
 
-/* ----- АДАПТИВНЫЙ КАЛЕНДАРЬ (Mobile Friendly) ----- */
 #calendar-container {
     background: white;
     border-radius: 12px;
@@ -158,98 +112,42 @@ th:hover {
     margin-bottom: 30px;
     overflow-x: auto;
 }
-.fc {
-    font-family: 'Inter', sans-serif;
-    max-width: 100%;
-}
+.fc { font-family: 'Inter', sans-serif; max-width: 100%; }
 .fc .fc-button-primary {
     background-color: #ff7a00;
     border-color: #e06a00;
 }
-.fc .fc-button-primary:hover {
-    background-color: #e06a00;
-}
+.fc .fc-button-primary:hover { background-color: #e06a00; }
 
-/* Адаптация для планшетов и телефонов */
+/* ----- МОБИЛЬНАЯ АДАПТАЦИЯ КАЛЕНДАРЯ (без полного скрытия событий) ----- */
 @media (max-width: 768px) {
-    .container {
-        padding: 12px;
-    }
-    .title {
-        font-size: 18px;
-    }
-    .slogan {
-        font-size: 12px;
-    }
-    .total-card {
-        font-size: 15px;
-    }
-    .cards {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    }
-    .card img {
-        width: 90px;
-        height: 90px;
-    }
-    th, td {
-        padding: 8px;
-        font-size: 14px;
-    }
-    /* Улучшаем тач-панель календаря */
-    .fc .fc-toolbar {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .fc .fc-toolbar-title {
-        font-size: 1.2rem;
-    }
-    .fc .fc-button {
-        padding: 6px 10px;
-        font-size: 0.85rem;
-    }
-    /* Скрываем текст сегодня/названия дней при необходимости */
-    .fc .fc-col-header-cell-cushion {
-        font-size: 12px;
-    }
-    .fc .fc-daygrid-day-number {
-        font-size: 12px;
-    }
-    /* Делаем ячейки дней более компактными */
-    .fc .fc-daygrid-day-frame {
-        min-height: 55px;
-    }
-    /* Скрываем список событий в ячейке дня (на мобильных - клик по дню откроет подробности) */
-    .fc .fc-daygrid-day-events {
-        display: none;
-    }
-    /* Показываем точку вместо заголовков событий */
-    .fc .fc-daygrid-day-top {
-        justify-content: center;
-    }
+    .container { padding: 12px; }
+    .title { font-size: 18px; }
+    .slogan { font-size: 12px; }
+    .total-card { font-size: 15px; }
+    .cards { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    .card img { width: 90px; height: 90px; }
+    th, td { padding: 8px; font-size: 14px; }
+    
+    .fc .fc-toolbar { flex-wrap: wrap; gap: 8px; }
+    .fc .fc-toolbar-title { font-size: 1.2rem; }
+    .fc .fc-button { padding: 6px 10px; font-size: 0.85rem; }
+    .fc .fc-col-header-cell-cushion { font-size: 12px; }
+    .fc .fc-daygrid-day-number { font-size: 12px; }
+    .fc .fc-daygrid-day-frame { min-height: 65px; }
+    /* Разрешаем показывать события, но ограничиваем количество строк */
+    .fc .fc-daygrid-day-events { font-size: 10px; line-height: 1.2; }
+    .fc .fc-daygrid-day-events .fc-daygrid-event { margin: 1px 0; }
+    /* Для года на мобильных - горизонтальная прокрутка */
+    .fc .fc-daygrid-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .fc .fc-daygrid-day-frame { min-width: 80px; }
 }
-
 @media (max-width: 480px) {
-    /* Для очень узких экранов делаем горизонтальную прокрутку календаря */
-    .fc .fc-daygrid-body {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    .fc .fc-daygrid-day-frame {
-        min-width: 55px;
-    }
-    .fc .fc-button {
-        padding: 4px 8px;
-        font-size: 0.75rem;
-    }
+    .fc .fc-button { padding: 4px 8px; font-size: 0.75rem; }
+    .fc .fc-daygrid-day-frame { min-width: 65px; min-height: 55px; }
 }
-
-/* Мобильная оптимизация таблицы рейтинга */
 @media (max-width: 600px) {
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
+    table { display: block; overflow-x: auto; white-space: nowrap; }
 }
 </style>
 </head>
@@ -264,16 +162,13 @@ th:hover {
 </header>
 
 <div class="container">
-    <!-- Руководящий состав -->
     <h2>Руководящий состав</h2>
     <div class="cards" id="leadership"></div>
     <div id="leadError" class="error"></div>
 
-    <!-- Календарь -->
     <h2 style="margin-top: 40px;">Календарь событий</h2>
     <div id="calendar-container"></div>
 
-    <!-- Рейтинг -->
     <h2>Рейтинг</h2>
     <div class="total-card">
         Общая сумма НОМУС-коинов: <span id="totalPointsValue">0</span>
@@ -282,13 +177,7 @@ th:hover {
         <input type="text" id="search" placeholder="Поиск по ФИО...">
     </div>
     <table id="ratingTable">
-        <thead>
-            <tr>
-                <th data-col="name">ФИО</th>
-                <th data-col="points">Сумма НОМУС-коинов</th>
-                <th data-col="projects">Продуктовые запросы</th>
-            </tr>
-        </thead>
+        <thead><tr><th data-col="name">ФИО</th><th data-col="points">Сумма НОМУС-коинов</th><th data-col="projects">Продуктовые запросы</th></tr></thead>
         <tbody></tbody>
     </table>
     <div id="ratingError" class="error"></div>
@@ -296,16 +185,11 @@ th:hover {
 
 <script>
 // ======================== GOOGLE SHEETS ССЫЛКИ ========================
-// Рейтинг и руководство — ваши реальные ссылки (рабочие)
 const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
 const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
+// ЗАМЕНИТЕ НА ВАШУ ССЫЛКУ НА ЛИСТ СОБЫТИЙ (title, start, end, description)
+const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv"; // ЗАМЕНИТЕ
 
-// ВАЖНО: Замените ссылку ниже на вашу реальную ссылку CSV листа events (столбцы: title, start, end, description)
-const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv"; // ЗАМЕНИТЕ НА СВОЮ ССЫЛКУ
-
-// ======================================================================
-
-// Порядок должностей для руководства
 const ROLE_ORDER = [
     "Председатель Совета СНО",
     "Заместитель председателя Совета СНО, координатор по организационной работе",
@@ -315,49 +199,33 @@ const ROLE_ORDER = [
     "Советник председателя"
 ];
 
-// Парсер CSV с поддержкой кавычек
 function parseCSV(text) {
     const rows = [];
     let row = [];
     let current = '';
     let insideQuotes = false;
     for (let char of text) {
-        if (char === '"') {
-            insideQuotes = !insideQuotes;
-        } else if (char === ',' && !insideQuotes) {
-            row.push(current);
-            current = '';
-        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
-            if (current || row.length) {
-                row.push(current);
-                rows.push(row);
-                row = [];
-                current = '';
-            }
-        } else {
-            current += char;
-        }
+        if (char === '"') { insideQuotes = !insideQuotes; }
+        else if (char === ',' && !insideQuotes) { row.push(current); current = ''; }
+        else if ((char === '\n' || char === '\r') && !insideQuotes) {
+            if (current || row.length) { row.push(current); rows.push(row); row = []; current = ''; }
+        } else { current += char; }
     }
     if (current) row.push(current);
     if (row.length) rows.push(row);
     return rows;
 }
 
-// ======================== РЕЙТИНГ ========================
+// РЕЙТИНГ
 let ratingData = [];
 let sortDir = 1;
-
 async function loadRating() {
     try {
         const res = await fetch(RATING_URL);
         if (!res.ok) throw new Error();
         const text = await res.text();
         const data = parseCSV(text).slice(1);
-        ratingData = data.map(r => ({
-            name: r[0] || "",
-            points: parseInt(r[1]) || 0,
-            projects: r[2] || ""
-        }));
+        ratingData = data.map(r => ({ name: r[0] || "", points: parseInt(r[1]) || 0, projects: r[2] || "" }));
         const total = ratingData.reduce((sum, p) => sum + p.points, 0);
         document.getElementById('totalPointsValue').innerText = total;
         renderTable(ratingData);
@@ -366,29 +234,20 @@ async function loadRating() {
         console.error(e);
     }
 }
-
 function renderTable(data) {
     const tbody = document.querySelector("#ratingTable tbody");
     tbody.innerHTML = "";
     data.forEach(row => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${escapeHtml(row.name)}</td>
-            <td>${row.points}</td>
-            <td>${escapeHtml(row.projects)}</td>
-        `;
+        tr.innerHTML = `<td>${escapeHtml(row.name)}</td><td>${row.points}</td><td>${escapeHtml(row.projects)}</td>`;
         tbody.appendChild(tr);
     });
 }
-
-// Поиск
 document.getElementById("search").addEventListener("input", e => {
     const val = e.target.value.toLowerCase();
     const filtered = ratingData.filter(r => r.name.toLowerCase().includes(val));
     renderTable(filtered);
 });
-
-// Сортировка
 document.querySelectorAll("th").forEach(th => {
     th.addEventListener("click", () => {
         const col = th.dataset.col;
@@ -402,18 +261,14 @@ document.querySelectorAll("th").forEach(th => {
     });
 });
 
-// ======================== РУКОВОДСТВО ========================
+// РУКОВОДСТВО
 async function loadLeadership() {
     try {
         const res = await fetch(LEAD_URL);
         if (!res.ok) throw new Error();
         const text = await res.text();
         const data = parseCSV(text).slice(1);
-        let leaders = data.map(r => ({
-            role: r[0],
-            name: r[1],
-            photo: r[2]
-        }));
+        let leaders = data.map(r => ({ role: r[0], name: r[1], photo: r[2] }));
         leaders.sort((a,b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
         const container = document.getElementById("leadership");
         container.innerHTML = "";
@@ -433,11 +288,9 @@ async function loadLeadership() {
     }
 }
 
-// ======================== КАЛЕНДАРЬ (с автоопределением вида для мобильных) ========================
+// КАЛЕНДАРЬ
 let calendar;
-
 async function loadEvents() {
-    // Проверяем, что ссылка не дефолтная
     if (!EVENTS_URL || EVENTS_URL.includes("gid=123456789")) {
         document.getElementById('calendar-container').innerHTML = '<p style="color:gray;">Укажите ссылку на Google Sheets с событиями (лист events: title, start, end, description) в переменной EVENTS_URL</p>';
         return;
@@ -454,19 +307,10 @@ async function loadEvents() {
             description: row[3] || ""
         })).filter(ev => ev.start);
 
-        if (calendar) {
-            calendar.destroy();
-        }
-
-        // Определяем вид по умолчанию в зависимости от ширины экрана
-        let defaultView = 'multiMonthYear'; // для больших экранов
-        if (window.innerWidth <= 768) {
-            defaultView = 'timeGridWeek';   // на телефонах показываем неделю
-        }
-
+        if (calendar) calendar.destroy();
         const calendarEl = document.getElementById('calendar-container');
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: defaultView,
+            initialView: 'multiMonthYear',
             locale: 'ru',
             firstDay: 1,
             events: events,
@@ -475,42 +319,20 @@ async function loadEvents() {
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,multiMonthYear'
             },
-            buttonText: {
-                today: 'Сегодня',
-                dayGridMonth: 'Месяц',
-                timeGridWeek: 'Неделя',
-                multiMonthYear: 'Год'
-            },
+            buttonText: { today: 'Сегодня', dayGridMonth: 'Месяц', timeGridWeek: 'Неделя', multiMonthYear: 'Год' },
             eventClick: function(info) {
                 const desc = info.event.extendedProps.description;
-                if (desc) {
-                    alert(info.event.title + "\n\n" + desc);
-                } else {
-                    alert(info.event.title);
-                }
+                if (desc) alert(info.event.title + "\n\n" + desc);
+                else alert(info.event.title);
             },
             contentHeight: 'auto',
-            // Для улучшения тача:
             handleWindowResize: true,
-            // Добавляем возможность скролла событий
-            eventDisplay: 'block',
-            // Скрываем детали событий в ячейках дня на мобильных (оставляем только точку)
-            dayMaxEvents: true,   // при большом количестве событий показывать ссылку "ещё"
+            dayMaxEvents: 2,  // показываем максимум 2 события в ячейке дня, остальные через "ещё"
         });
         calendar.render();
-
-        // При изменении размера окна можно менять представление, но это на ваше усмотрение
-        window.addEventListener('resize', function() {
-            if (window.innerWidth <= 768 && calendar.view.type !== 'timeGridWeek') {
-                calendar.changeView('timeGridWeek');
-            } else if (window.innerWidth > 768 && (calendar.view.type === 'timeGridWeek' && localStorage.getItem('userSelectedView') !== 'timeGridWeek')) {
-                // По желанию можно вернуть год, но лучше не трогать, если пользователь вручную переключил
-            }
-        });
-        
     } catch(e) {
         console.error('Ошибка загрузки событий:', e);
-        document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь. Проверьте ссылку на CSV и формат данных (даты в формате YYYY-MM-DD).</p>';
+        document.getElementById('calendar-container').innerHTML = '<p style="color:red;">Не удалось загрузить календарь. Проверьте ссылку на CSV и формат дат (YYYY-MM-DD).</p>';
     }
 }
 
@@ -524,7 +346,6 @@ function escapeHtml(str) {
     });
 }
 
-// Запуск всех загрузок
 loadRating();
 loadLeadership();
 loadEvents();
