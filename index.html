@@ -131,36 +131,31 @@ th:hover {
     color: red;
     margin-top: 10px;
 }
-/* Фильтры */
-.filter-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-.filter-btn {
-    background: #f0f0f0;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 30px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 500;
-    transition: 0.2s;
-}
-.filter-btn.active {
-    background: #ff7a00;
-    color: white;
-}
-.filter-btn:hover {
-    background: #e0e0e0;
-}
-/* Календарь */
+/* ---------- КАЛЕНДАРЬ ---------- */
 .calendar-container {
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     margin-bottom: 30px;
+}
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+.filter-btn {
+    background: #eee;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+}
+.filter-btn.active {
+    background: #ff7a00;
+    color: white;
 }
 .calendar-sticky-header {
     position: sticky;
@@ -236,9 +231,8 @@ th:hover {
     margin-bottom: 4px;
     font-size: 14px;
 }
+/* Базовый стиль для полоски события */
 .event-bar {
-    background-color: #ffefdb;
-    border-left: 4px solid #ff7a00;
     border-radius: 4px;
     padding: 4px 6px;
     margin-top: 2px;
@@ -250,7 +244,17 @@ th:hover {
     transition: 0.1s;
 }
 .event-bar:hover {
-    background-color: #ffe0b5;
+    filter: brightness(0.95);
+}
+/* События-мероприятия (оранжевые) */
+.event-bar--event {
+    background-color: #ffefdb;
+    border-left: 4px solid #ff7a00;
+}
+/* События-посты (синие) */
+.event-bar--post {
+    background-color: #e0f2fe;
+    border-left: 4px solid #3b82f6;
 }
 /* Модальное окно */
 .modal {
@@ -273,14 +277,10 @@ th:hover {
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     text-align: center;
-    position: relative;
 }
 .modal-content h3 {
     margin-top: 0;
     color: #ff7a00;
-}
-.modal-content p {
-    margin: 8px 0;
 }
 .close-modal {
     background: #ff7a00;
@@ -324,13 +324,7 @@ th:hover {
     <div class="cards" id="leadership"></div>
     <div id="leadError" class="error"></div>
 
-    <h2>Календарь</h2>
-    <!-- Фильтры -->
-    <div class="filter-buttons" id="filterButtons">
-        <button class="filter-btn active" data-filter="all">Все</button>
-        <button class="filter-btn" data-filter="events">Мероприятия</button>
-        <button class="filter-btn" data-filter="posts">Посты</button>
-    </div>
+    <h2>Календарь событий</h2>
     <div id="calendar-main"></div>
 
     <h2>Рейтинг</h2>
@@ -365,14 +359,13 @@ th:hover {
 
 <script>
 // ======================== GOOGLE SHEETS ССЫЛКИ ========================
-// Замените эти ссылки на ваши реальные CSV-ссылки листов events и posts
-const EVENTS_URLS = {
-    events: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv"
-    posts: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1345549220&single=true&output=csv" 
-};
+const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
+const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
+const EVENTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1988770029&single=true&output=csv";
+const POSTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1345549220&single=true&output=csv";
 // ======================================================================
 
-// Парсер CSV (универсальный)
+// Парсер CSV
 function parseCSV(text) {
     const rows = [];
     let row = [];
@@ -430,7 +423,6 @@ let ratingData = [];
 let sortDir = 1;
 
 async function loadRating() {
-    const RATING_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=0&single=true&output=csv";
     try {
         const res = await fetch(RATING_URL);
         if (!res.ok) throw new Error();
@@ -490,7 +482,6 @@ const ROLE_ORDER = [
     "Советник председателя"
 ];
 async function loadLeadership() {
-    const LEAD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2ui9ijGUHk_PqZCuFzg1cCfvdXM1_8joz0eNrrwmma7VKteZkiX2bMjPv1Ci0UJxvRYqnx1x8Vbgo/pub?gid=1094569537&single=true&output=csv";
     try {
         const res = await fetch(LEAD_URL);
         if (!res.ok) throw new Error();
@@ -520,88 +511,70 @@ async function loadLeadership() {
     }
 }
 
-// ---------- КАЛЕНДАРЬ С ФИЛЬТРАЦИЕЙ ----------
+// ---------- КАЛЕНДАРЬ С ФИЛЬТРАЦИЕЙ И ЦВЕТОМ ПО ТИПУ ----------
 let currentYear, currentMonth;
-let allEvents = [];        // все события с типом (events/posts)
-let currentFilter = "all"; // all, events, posts
+let currentFilter = 'all'; // 'all', 'event', 'post'
+let rawEventsAll = [];
 
-// Загрузка событий из двух источников
-async function loadEvents() {
-    allEvents = [];
-    // Загружаем мероприятия
+async function loadEventsFromSources() {
     try {
-        if (EVENTS_URLS.events && !EVENTS_URLS.events.includes("ВАШ_ID")) {
-            const res = await fetch(EVENTS_URLS.events);
-            if (res.ok) {
-                const text = await res.text();
-                const rows = parseCSV(text).slice(1);
-                rows.forEach(row => {
-                    let title = row[0]?.trim() || "Без названия";
-                    let startRaw = row[1]?.trim();
-                    let endRaw = row[2]?.trim() || startRaw;
-                    let description = row[3]?.trim() || "";
-                    if (!startRaw) return;
-                    let startDate = parseDateFromString(startRaw);
-                    let endDate = parseDateFromString(endRaw);
-                    if (!startDate) return;
-                    if (!endDate) endDate = startDate;
-                    if (startDate > endDate) { let tmp = startDate; startDate = endDate; endDate = tmp; }
-                    allEvents.push({
-                        title,
-                        start: startDate,
-                        end: endDate,
-                        description,
-                        type: "events"
-                    });
-                });
-            }
+        const resEvents = await fetch(EVENTS_URL);
+        const textEvents = await resEvents.text();
+        const rowsEvents = parseCSV(textEvents).slice(1);
+        const events = rowsEvents.map(row => ({
+            title: row[0]?.trim() || "Мероприятие",
+            startRaw: row[1]?.trim(),
+            endRaw: row[2]?.trim() || row[1]?.trim(),
+            description: row[3]?.trim() || "",
+            type: 'event'
+        }));
+
+        const resPosts = await fetch(POSTS_URL);
+        const textPosts = await resPosts.text();
+        const rowsPosts = parseCSV(textPosts).slice(1);
+        const posts = rowsPosts.map(row => ({
+            title: row[0]?.trim() || "Пост",
+            startRaw: row[1]?.trim(),
+            endRaw: row[2]?.trim() || row[1]?.trim(),
+            description: row[3]?.trim() || "",
+            type: 'post'
+        }));
+
+        const allRaw = [...events, ...posts];
+        rawEventsAll = [];
+        allRaw.forEach(item => {
+            if (!item.startRaw) return;
+            let startDate = parseDateFromString(item.startRaw);
+            let endDate = parseDateFromString(item.endRaw);
+            if (!startDate) return;
+            if (!endDate) endDate = startDate;
+            if (startDate > endDate) { let tmp = startDate; startDate = endDate; endDate = tmp; }
+            rawEventsAll.push({
+                title: item.title,
+                start: startDate,
+                end: endDate,
+                description: item.description,
+                type: item.type
+            });
+        });
+
+        if (currentYear !== undefined) {
+            renderCalendar(currentYear, currentMonth);
         }
-    } catch(e) { console.error("Ошибка загрузки мероприятий", e); }
-    
-    // Загружаем посты
-    try {
-        if (EVENTS_URLS.posts && !EVENTS_URLS.posts.includes("ВАШ_ID")) {
-            const res = await fetch(EVENTS_URLS.posts);
-            if (res.ok) {
-                const text = await res.text();
-                const rows = parseCSV(text).slice(1);
-                rows.forEach(row => {
-                    let title = row[0]?.trim() || "Без названия";
-                    let startRaw = row[1]?.trim();
-                    let endRaw = row[2]?.trim() || startRaw;
-                    let description = row[3]?.trim() || "";
-                    if (!startRaw) return;
-                    let startDate = parseDateFromString(startRaw);
-                    let endDate = parseDateFromString(endRaw);
-                    if (!startDate) return;
-                    if (!endDate) endDate = startDate;
-                    if (startDate > endDate) { let tmp = startDate; startDate = endDate; endDate = tmp; }
-                    allEvents.push({
-                        title,
-                        start: startDate,
-                        end: endDate,
-                        description,
-                        type: "posts"
-                    });
-                });
-            }
-        }
-    } catch(e) { console.error("Ошибка загрузки постов", e); }
-    
-    if (currentYear !== undefined) {
-        renderCalendar(currentYear, currentMonth);
+    } catch(e) {
+        console.error('Ошибка загрузки событий:', e);
+        document.getElementById('calendar-main').innerHTML = '<p style="color:red;">Не удалось загрузить календарь</p>';
     }
 }
 
-// Фильтрованные события
 function getFilteredEvents() {
-    if (currentFilter === "all") return allEvents;
-    return allEvents.filter(ev => ev.type === currentFilter);
+    if (currentFilter === 'all') return rawEventsAll;
+    return rawEventsAll.filter(ev => ev.type === currentFilter);
 }
 
 function renderCalendar(year, month) {
     const firstDayOfMonth = new Date(Date.UTC(year, month, 1));
-    const startWeekday = firstDayOfMonth.getUTCDay(); // 0 вс
+    const startWeekday = firstDayOfMonth.getUTCDay();
     let startDate = new Date(firstDayOfMonth);
     let offset = (startWeekday === 0 ? 6 : startWeekday - 1);
     startDate.setUTCDate(startDate.getUTCDate() - offset);
@@ -613,13 +586,9 @@ function renderCalendar(year, month) {
         days.push(date);
     }
     
-    // Подготовка событий по дням
     const filteredEvents = getFilteredEvents();
     const eventsByDay = {};
-    days.forEach(date => {
-        const key = formatDateKey(date);
-        eventsByDay[key] = [];
-    });
+    days.forEach(date => { eventsByDay[formatDateKey(date)] = []; });
     
     filteredEvents.forEach(ev => {
         const start = ev.start;
@@ -636,7 +605,6 @@ function renderCalendar(year, month) {
         });
     });
     
-    // Удаление дубликатов
     for (let key in eventsByDay) {
         const unique = [];
         const seen = new Set();
@@ -650,9 +618,17 @@ function renderCalendar(year, month) {
         eventsByDay[key] = unique;
     }
     
-    // Отрисовка
     const container = document.getElementById('calendar-main');
     container.innerHTML = '';
+    
+    const filterDiv = document.createElement('div');
+    filterDiv.className = 'filter-buttons';
+    filterDiv.innerHTML = `
+        <button class="filter-btn ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">Все</button>
+        <button class="filter-btn ${currentFilter === 'event' ? 'active' : ''}" data-filter="event">Мероприятия</button>
+        <button class="filter-btn ${currentFilter === 'post' ? 'active' : ''}" data-filter="post">Посты</button>
+    `;
+    container.appendChild(filterDiv);
     
     const wrapperDiv = document.createElement('div');
     wrapperDiv.className = 'calendar-container';
@@ -662,13 +638,9 @@ function renderCalendar(year, month) {
     const headerDiv = document.createElement('div');
     headerDiv.className = 'calendar-header';
     headerDiv.innerHTML = `
-        <div class="calendar-nav">
-            <button id="prevMonthBtn">◀ Пред.</button>
-        </div>
+        <div class="calendar-nav"><button id="prevMonthBtn">◀ Пред.</button></div>
         <div class="month-year">${formatFullMonthYear(year, month)}</div>
-        <div class="calendar-nav">
-            <button id="nextMonthBtn">След. ▶</button>
-        </div>
+        <div class="calendar-nav"><button id="nextMonthBtn">След. ▶</button></div>
     `;
     stickyHeader.appendChild(headerDiv);
     wrapperDiv.appendChild(stickyHeader);
@@ -710,7 +682,9 @@ function renderCalendar(year, month) {
         
         dayEvents.forEach(ev => {
             const eventDiv = document.createElement('div');
-            eventDiv.className = 'event-bar';
+            // Применяем класс в зависимости от типа события
+            const typeClass = ev.type === 'event' ? 'event-bar--event' : 'event-bar--post';
+            eventDiv.className = `event-bar ${typeClass}`;
             let displayText = ev.title;
             if (!ev.isFirstDay) {
                 displayText = '→ ' + ev.title;
@@ -719,12 +693,11 @@ function renderCalendar(year, month) {
             eventDiv.textContent = displayText;
             const startStr = formatDateKey(ev.start);
             const endStr = formatDateKey(ev.end);
-            eventDiv.title = `${ev.title} (${ev.type === 'events' ? 'Мероприятие' : 'Пост'})${ev.description ? ': '+ev.description : ''} ${startStr} – ${endStr}`;
+            eventDiv.title = `${ev.title} (${ev.type === 'event' ? 'Мероприятие' : 'Пост'})${ev.description ? ': '+ev.description : ''} (${startStr} – ${endStr})`;
             eventDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const typeText = ev.type === 'events' ? 'Мероприятие' : 'Пост';
-                document.getElementById('modalTitle').innerText = `${ev.title} (${typeText})`;
-                document.getElementById('modalDesc').innerText = ev.description || 'Нет описания';
+                document.getElementById('modalTitle').innerText = ev.title;
+                document.getElementById('modalDesc').innerText = `${ev.description || 'Нет описания'}\nТип: ${ev.type === 'event' ? 'Мероприятие' : 'Пост'}`;
                 document.getElementById('modalDates').innerText = `${startStr} — ${endStr}`;
                 document.getElementById('eventModal').style.display = 'flex';
             });
@@ -738,31 +711,23 @@ function renderCalendar(year, month) {
     wrapperDiv.appendChild(scrollDiv);
     container.appendChild(wrapperDiv);
     
-    // Обработчики кнопок навигации
-    const prevBtn = document.getElementById('prevMonthBtn');
-    const nextBtn = document.getElementById('nextMonthBtn');
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentMonth === 0) {
-                currentMonth = 11;
-                currentYear--;
-            } else {
-                currentMonth--;
-            }
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        if (currentMonth === 0) { currentMonth = 11; currentYear--; }
+        else { currentMonth--; }
+        renderCalendar(currentYear, currentMonth);
+    });
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        if (currentMonth === 11) { currentMonth = 0; currentYear++; }
+        else { currentMonth++; }
+        renderCalendar(currentYear, currentMonth);
+    });
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentFilter = btn.dataset.filter;
             renderCalendar(currentYear, currentMonth);
         });
-    }
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (currentMonth === 11) {
-                currentMonth = 0;
-                currentYear++;
-            } else {
-                currentMonth++;
-            }
-            renderCalendar(currentYear, currentMonth);
-        });
-    }
+    });
 }
 
 function initCalendar() {
@@ -772,22 +737,6 @@ function initCalendar() {
     renderCalendar(currentYear, currentMonth);
 }
 
-// Фильтры
-function setupFilters() {
-    const buttons = document.querySelectorAll('.filter-btn');
-    buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            buttons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilter = btn.dataset.filter;
-            if (currentYear !== undefined) {
-                renderCalendar(currentYear, currentMonth);
-            }
-        });
-    });
-}
-
-// Модальное окно
 const modal = document.getElementById('eventModal');
 const closeBtn = document.getElementById('closeModalBtn');
 closeBtn.onclick = () => { modal.style.display = 'none'; };
@@ -803,13 +752,9 @@ function escapeHtml(str) {
     });
 }
 
-// Старт
 loadRating();
 loadLeadership();
-loadEvents().then(() => {
-    initCalendar();
-    setupFilters();
-});
+loadEventsFromSources().then(() => initCalendar());
 </script>
 </body>
 </html>
