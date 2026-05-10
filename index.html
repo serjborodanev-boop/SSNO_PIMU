@@ -131,6 +131,30 @@ th:hover {
     color: red;
     margin-top: 10px;
 }
+/* Кнопки */
+.buttons-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin: 20px 0 30px;
+}
+.custom-button {
+    display: inline-block;
+    background-color: #ff7a00;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.1s;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+.custom-button:hover {
+    background-color: #e06a00;
+    transform: scale(1.02);
+}
 /* ---------- КАЛЕНДАРЬ ---------- */
 .calendar-container {
     background: white;
@@ -231,7 +255,7 @@ th:hover {
     margin-bottom: 4px;
     font-size: 14px;
 }
-/* Базовый стиль для полоски события */
+/* Цветные полоски для мероприятий и постов */
 .event-bar {
     border-radius: 4px;
     padding: 4px 6px;
@@ -246,12 +270,10 @@ th:hover {
 .event-bar:hover {
     filter: brightness(0.95);
 }
-/* События-мероприятия (оранжевые) */
 .event-bar--event {
     background-color: #ffefdb;
     border-left: 4px solid #ff7a00;
 }
-/* События-посты (синие) */
 .event-bar--post {
     background-color: #e0f2fe;
     border-left: 4px solid #3b82f6;
@@ -306,6 +328,10 @@ th:hover {
         padding: 6px 10px;
         font-size: 12px;
     }
+    .custom-button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
 }
 </style>
 </head>
@@ -323,6 +349,12 @@ th:hover {
     <h2>Руководящий состав</h2>
     <div class="cards" id="leadership"></div>
     <div id="leadError" class="error"></div>
+
+    <!-- Кнопки для Яндекс Форм (замените ссылки) -->
+    <div class="buttons-row">
+        <a href="https://forms.yandex.ru/u/68f7b6c35056900b882cc7ef" class="custom-button" target="_blank" rel="noopener noreferrer">📝 Предложить свой продуктовый запрос</a>
+        <a href="https://forms.yandex.ru/u/68f7b6c35056900b882cc7ef" class="custom-button" target="_blank" rel="noopener noreferrer">🔒 Анонимная форма для предложений</a>
+    </div>
 
     <h2>Календарь событий</h2>
     <div id="calendar-main"></div>
@@ -511,9 +543,9 @@ async function loadLeadership() {
     }
 }
 
-// ---------- КАЛЕНДАРЬ С ФИЛЬТРАЦИЕЙ И ЦВЕТОМ ПО ТИПУ ----------
+// ---------- КАЛЕНДАРЬ ----------
 let currentYear, currentMonth;
-let currentFilter = 'all'; // 'all', 'event', 'post'
+let currentFilter = 'all';
 let rawEventsAll = [];
 
 async function loadEventsFromSources() {
@@ -682,7 +714,6 @@ function renderCalendar(year, month) {
         
         dayEvents.forEach(ev => {
             const eventDiv = document.createElement('div');
-            // Применяем класс в зависимости от типа события
             const typeClass = ev.type === 'event' ? 'event-bar--event' : 'event-bar--post';
             eventDiv.className = `event-bar ${typeClass}`;
             let displayText = ev.title;
